@@ -7,6 +7,10 @@ import android.media.AudioRecord;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +32,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
+    //region Global Variables
     // Global AudioClassifer variables
     AudioClassifier classifier;
     TensorAudio tensorAudio;
@@ -36,8 +41,11 @@ public class MainActivity extends AppCompatActivity {
     //Timer to get recording samples
     public Timer recordTimer = new Timer();
 
-    //Create placeholder for user's consent to record_audio permission.
-//This will be used in handling callback
+    //endregion
+
+    //region Request Audio Permissions
+    // Create placeholder for user's consent to record_audio permission.
+    // This will be used in handling callback
     private final int MY_PERMISSIONS_RECORD_AUDIO = 1;
 
     private void requestAudioPermissions() {
@@ -87,12 +95,16 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
-                    Toast.makeText(this, "Permissions Denied to record audio", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Permissions denied to record audio", Toast.LENGTH_LONG).show();
                 }
                 return;
             }
         }
     }
+
+    //endregion
+
+    //region Audio Classification Model
     public void InitialiseAudioModel() {
         // Set general detection options, e.g. number of used threads
         BaseOptions.Builder baseOptionsBuilder = BaseOptions.builder()
@@ -115,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e("AudioClassification", "TFLite failed to load with error: " + e.getMessage());
         }
     }
+
     public void StartAudioInference() {
         if (recorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
             return;
@@ -129,7 +142,8 @@ public class MainActivity extends AppCompatActivity {
         float lengthInMilliSeconds = ((classifier.getRequiredInputBufferSize() * 1.0f) /
                 classifier.getRequiredTensorAudioFormat().getSampleRate()) * 1000;
 
-        long interval = (long)(lengthInMilliSeconds * (1 - 0.5));
+        // 0.5 is the overlap factor, i.e. 0.5 of the audio sample will overlap with the previous audio sample
+        long interval = (long) (lengthInMilliSeconds * (1 - 0.5));
         recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
 
     }
@@ -140,20 +154,7 @@ public class MainActivity extends AppCompatActivity {
         recordTimer.purge();
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        // Initialization
-        requestAudioPermissions();
-    }
-
-    @Override
-    public void onDestroy() {
-        StopInference();
-        super.onDestroy();
-    }
     private class GetSamples extends TimerTask {
         //This thing's a goddamn mess
         @Override
@@ -171,30 +172,88 @@ public class MainActivity extends AppCompatActivity {
             List<Classifications> output = classifier.classify(tensorAudio);
             List<Category> categories = output.get(0).getCategories();
 
-           if (categories.size() > 0) {
-               //Get the most likely emotion
-               //Initialize max with first element of array.
-               float maxProbability = categories.get(0).getScore();
-               int maxIndex = 0;
-               //Loop through the array
-               for (int i = 0; i < categories.size(); i++) {
-                   //Compare elements of array with max
-                   if (categories.get(i).getScore() > maxProbability) {
-                       maxProbability = categories.get(i).getScore();
-                       maxIndex = i;
-                   }
-               }
+            if (categories.size() > 0) {
+                //Get the most likely emotion
+                //Initialize max with first element of array.
+                float maxProbability = categories.get(0).getScore();
+                int maxIndex = 0;
+                //Loop through the array
+                for (int i = 0; i < categories.size(); i++) {
+                    //Compare elements of array with max
+                    if (categories.get(i).getScore() > maxProbability) {
+                        maxProbability = categories.get(i).getScore();
+                        maxIndex = i;
+                    }
+                }
 
-               //Get the associated emotion
-               String category = categories.get(maxIndex).getLabel();
-               @SuppressLint("DefaultLocale")
-               String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%";
+                //Get the associated emotion
+                String category = categories.get(maxIndex).getLabel();
+                @SuppressLint("DefaultLocale")
+                String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%";
 
-               TextView textView = (TextView) findViewById(R.id.ClassText);
-               textView.setText(outputText);
-           }
+                TextView textView = (TextView) findViewById(R.id.ClassText);
+                textView.setText("Detected Class: " + outputText);
+            }
         }
     }
 
+    //endregion
 
+    //region Helper functions
+    private void enableViews(View v, boolean enabled) {
+        if (v instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) v;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                enableViews(vg.getChildAt(i), enabled);
+            }
+        }
+        v.setEnabled(enabled);
+    }
+    //endregion
+
+    //region Activity Lifecycle
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // Disable the UI on audio classification first
+        LinearLayout audioInferenceSection = (LinearLayout) findViewById(R.id.AudioInferenceSection);
+        //enableViews(audioInferenceSection, false);
+
+        // Event handlers for the 2 buttons
+        Button connectBLEBtn = (Button) findViewById(R.id.ConnectBLEBtn);
+        connectBLEBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                connectBLEBtnClicked((Button) view);
+            }
+        });
+
+        Button startAudioInferenceBtn = (Button) findViewById(R.id.StartAudioInferenceBtn);
+        startAudioInferenceBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startAudioInferenceBtnClicked((Button) view);
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        StopInference();
+        super.onDestroy();
+    }
+
+    //endregion
+
+    //region Button event handling
+    public void connectBLEBtnClicked(Button connectBLEBtn) {
+
+    }
+
+    public void startAudioInferenceBtnClicked(Button startAudioInferenceBtn) {
+        // Begin model initialisation
+        requestAudioPermissions();
+    }
 }
