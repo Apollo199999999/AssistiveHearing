@@ -2,17 +2,28 @@ package com.sic.assistivehearing;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioRecord;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
     TensorAudio tensorAudio;
     AudioRecord recorder;
 
+    public ArrayAdapter BLEListViewArrayAdapter;
+
     //Timer to get recording samples
     public Timer recordTimer = new Timer();
 
@@ -59,15 +72,16 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             permsList.add(Manifest.permission.BLUETOOTH);
             permsList.add(Manifest.permission.BLUETOOTH_ADMIN);
-        }
-        else {
+        } else {
+            permsList.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+            permsList.add(Manifest.permission.ACCESS_FINE_LOCATION);
             permsList.add(Manifest.permission.BLUETOOTH_SCAN);
             permsList.add(Manifest.permission.BLUETOOTH_CONNECT);
         }
         BluetoothPermissions = Arrays.copyOf(permsList.toArray(new String[0]), permsList.size());
     }
 
-    public  boolean hasPermissions(Context context, String... permissions) {
+    public boolean hasPermissions(Context context, String... permissions) {
         if (context != null && permissions != null) {
             for (String permission : permissions) {
                 if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
@@ -81,13 +95,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean shouldShowRequestPermissionRationale(String... permissions) {
         if (permissions != null) {
             for (String permission : permissions) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission) ) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
                     return true;
                 }
             }
         }
         return false;
     }
+
     private void requestBluetoothPermissions() {
         initializeBluetoothPerms();
 
@@ -195,9 +210,63 @@ public class MainActivity extends AppCompatActivity {
     //endregion
 
     //region Bluetooth functions
-    public void ScanBLEDevices() {
+    private BluetoothManager bluetoothManager;
+    private BluetoothAdapter bluetoothAdapter;
+    private BluetoothLeScanner bluetoothLeScanner;
+    private boolean scanning;
+    private Handler handler = new Handler();
 
+    // Stops scanning after 10 second(s).
+    private static final long SCAN_PERIOD = 10000;
+
+
+    @SuppressLint("MissingPermission")
+    public void ScanBLEDevices() {
+        // Clear the listview that displays ble devices
+        BLEListViewArrayAdapter.clear();
+
+        // Get bluetooth classes
+        bluetoothManager = (BluetoothManager) this.getSystemService(Context.BLUETOOTH_SERVICE);
+        bluetoothAdapter = bluetoothManager.getAdapter();
+        bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+
+        if (!scanning) {
+            // Stops scanning after a predefined scan period.
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    scanning = false;
+                    bluetoothLeScanner.stopScan(leScanCallback);
+                }
+            }, SCAN_PERIOD);
+
+            scanning = true;
+
+
+            bluetoothLeScanner.startScan(leScanCallback);
+        } else {
+            scanning = false;
+            bluetoothLeScanner.stopScan(leScanCallback);
+        }
     }
+
+
+    // Device scan callback.
+    @SuppressLint("MissingPermission")
+    private ScanCallback leScanCallback =
+            new ScanCallback() {
+                @Override
+                public void onScanResult(int callbackType, ScanResult result) {
+                    super.onScanResult(callbackType, result);
+                    BluetoothDevice BLEDevice = result.getDevice();
+
+                    // Show scan results in the listview
+                    if (result.getScanRecord().getDeviceName() != null) {
+                        BLEListViewArrayAdapter.add(result.getScanRecord().getDeviceName() + ": " + BLEDevice.getAddress());
+                    }
+                }
+            };
+
     //endregion
 
     //region Audio Classification Model
@@ -315,14 +384,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Disable the UI on audio classification first
         LinearLayout audioInferenceSection = (LinearLayout) findViewById(R.id.AudioInferenceSection);
-        //enableViews(audioInferenceSection, false);
+        enableViews(audioInferenceSection, false);
 
         // Event handlers for the 2 buttons
-        Button connectBLEBtn = (Button) findViewById(R.id.ConnectBLEBtn);
-        connectBLEBtn.setOnClickListener(new View.OnClickListener() {
+        Button scanBLEBtn = (Button) findViewById(R.id.ScanBLEBtn);
+        scanBLEBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                connectBLEBtnClicked((Button) view);
+                scanBLEBtnClicked((Button) view);
             }
         });
 
@@ -333,6 +402,17 @@ public class MainActivity extends AppCompatActivity {
                 startAudioInferenceBtnClicked((Button) view);
             }
         });
+
+        // Attach ArrayAdapter to BLE devices ListView
+        ListView bleListView = (ListView) findViewById(R.id.BLEListView);
+        List<String> bleListViewItems = new ArrayList<String>();
+        BLEListViewArrayAdapter = new ArrayAdapter(this,
+                android.R.layout.simple_list_item_1, bleListViewItems);
+        bleListView.setAdapter(BLEListViewArrayAdapter);
+
+        // Set placeholder text on listview
+        TextView emptyText = (TextView)findViewById(android.R.id.empty);
+        bleListView.setEmptyView(emptyText);
     }
 
     @Override
@@ -343,13 +423,14 @@ public class MainActivity extends AppCompatActivity {
 
     //endregion
 
-    //region Button event handling
-    public void connectBLEBtnClicked(Button connectBLEBtn) {
+    //region UI events
+    public void scanBLEBtnClicked(Button connectBLEBtn) {
+        // Request ble perms
         requestBluetoothPermissions();
     }
 
     public void startAudioInferenceBtnClicked(Button startAudioInferenceBtn) {
-        // Begin model initialisation
+        // Request audio perms
         requestAudioPermissions();
     }
 
