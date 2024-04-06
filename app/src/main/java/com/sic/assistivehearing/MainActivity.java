@@ -1,8 +1,11 @@
 package com.sic.assistivehearing;
 
+import static android.bluetooth.BluetoothAdapter.ERROR;
+import static android.bluetooth.BluetoothDevice.ACTION_BOND_STATE_CHANGED;
 import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.bluetooth.BluetoothDevice.BOND_BONDING;
 import static android.bluetooth.BluetoothDevice.BOND_NONE;
+import static android.bluetooth.BluetoothDevice.EXTRA_BOND_STATE;
 import static android.bluetooth.BluetoothGatt.GATT_SUCCESS;
 
 import android.Manifest;
@@ -13,12 +16,16 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.AudioRecord;
 import android.os.Build;
@@ -53,6 +60,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -287,6 +295,27 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
+
+    BluetoothGatt bluetoothGatt;
+
+    @SuppressLint("MissingPermission")
+    public void ConnectBLEDevice(BluetoothDevice device) {
+        bluetoothLeScanner.stopScan(leScanCallback);
+        bluetoothGatt = device.connectGatt(this, false, new BluetoothGattCallback() {
+            @Override
+            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                super.onConnectionStateChange(gatt, status, newState);
+
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    // successfully connected to the GATT Server
+                    device.createBond();
+                    bluetoothGatt.getServices();
+                }
+            }
+        });
+    }
+
+
     //endregion
 
     //region Audio Classification Model
@@ -481,20 +510,8 @@ public class MainActivity extends AppCompatActivity {
         // Get the device selected by the user
         BluetoothDevice selectedBLEDevice = ScannedBLEDevices.get(getListViewSelectedIndex(bleListView));
         if (bluetoothAdapter.isEnabled()) {
-            selectedBLEDevice.connectGatt(this, false, new BluetoothGattCallback() {
-                @Override
-                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                    super.onConnectionStateChange(gatt, status, newState);
-
-                    if (newState == BluetoothProfile.STATE_CONNECTED) {
-                        // successfully connected to the GATT Server
-                        // bond with the device
-                        selectedBLEDevice.createBond();
-                    }
-                }
-            });
-        }
-        else {
+            ConnectBLEDevice(selectedBLEDevice);
+        } else {
             Toast.makeText(this, "Failed to connect to device. Ensure that bluetooth is switched on.", Toast.LENGTH_LONG).show();
         }
 
