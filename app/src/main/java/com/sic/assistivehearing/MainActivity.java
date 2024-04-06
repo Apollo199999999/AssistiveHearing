@@ -49,11 +49,13 @@ public class MainActivity extends AppCompatActivity {
 
     //region Global Variables
     // Global AudioClassifer variables
-    AudioClassifier classifier;
-    TensorAudio tensorAudio;
-    AudioRecord recorder;
+    public AudioClassifier classifier;
+    public TensorAudio tensorAudio;
+    public AudioRecord recorder;
 
-    public ArrayAdapter BLEListViewArrayAdapter;
+    // BLEListView variables
+    public ArrayAdapter<String> BLEListViewArrayAdapter;
+    ArrayList<String> BLEListViewItems = new ArrayList<String>();
 
     //Timer to get recording samples
     public Timer recordTimer = new Timer();
@@ -217,13 +219,14 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler = new Handler();
 
     // Stops scanning after 10 second(s).
-    private static final long SCAN_PERIOD = 10000;
+    private static final long SCAN_PERIOD = 3000;
 
 
     @SuppressLint("MissingPermission")
     public void ScanBLEDevices() {
         // Clear the listview that displays ble devices
-        BLEListViewArrayAdapter.clear();
+        BLEListViewItems.clear();
+        BLEListViewArrayAdapter.notifyDataSetChanged();
 
         // Get bluetooth classes
         bluetoothManager = (BluetoothManager) this.getSystemService(Context.BLUETOOTH_SERVICE);
@@ -261,8 +264,10 @@ public class MainActivity extends AppCompatActivity {
                     BluetoothDevice BLEDevice = result.getDevice();
 
                     // Show scan results in the listview
-                    if (result.getScanRecord().getDeviceName() != null) {
-                        BLEListViewArrayAdapter.add(result.getScanRecord().getDeviceName() + ": " + BLEDevice.getAddress());
+                    String DisplayItem = result.getScanRecord().getDeviceName() + ": " + BLEDevice.getAddress();
+                    if (!BLEListViewItems.contains(DisplayItem)) {
+                        BLEListViewItems.add(DisplayItem);
+                        BLEListViewArrayAdapter.notifyDataSetChanged();
                     }
                 }
             };
@@ -405,9 +410,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Attach ArrayAdapter to BLE devices ListView
         ListView bleListView = (ListView) findViewById(R.id.BLEListView);
-        List<String> bleListViewItems = new ArrayList<String>();
-        BLEListViewArrayAdapter = new ArrayAdapter(this,
-                android.R.layout.simple_list_item_1, bleListViewItems);
+        BLEListViewArrayAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_single_choice, BLEListViewItems);
         bleListView.setAdapter(BLEListViewArrayAdapter);
 
         // Set placeholder text on listview
