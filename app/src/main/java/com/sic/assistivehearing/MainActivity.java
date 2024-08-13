@@ -33,11 +33,11 @@ public class MainActivity extends AppCompatActivity {
     TensorAudio tensorAudio;
     AudioRecord recorder;
 
-    //Timer to get recording samples
+    // Timer to get recording samples
     public Timer recordTimer = new Timer();
 
-    //Create placeholder for user's consent to record_audio permission.
-//This will be used in handling callback
+    // Create placeholder for user's consent to record_audio permission.
+    // This will be used in handling callback
     private final int MY_PERMISSIONS_RECORD_AUDIO = 1;
 
     private void requestAudioPermissions() {
@@ -45,12 +45,12 @@ public class MainActivity extends AppCompatActivity {
                 android.Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            //When permission is not granted by user, show them message why this permission is needed.
+            // When permission is not granted by user, show them message why this permission is needed.
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     android.Manifest.permission.RECORD_AUDIO)) {
                 Toast.makeText(this, "Please grant permissions to record audio", Toast.LENGTH_LONG).show();
 
-                //Give user option to still opt-in the permissions
+                // Give user option to still opt-in the permissions
                 ActivityCompat.requestPermissions(this,
                         new String[]{android.Manifest.permission.RECORD_AUDIO},
                         MY_PERMISSIONS_RECORD_AUDIO);
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                         MY_PERMISSIONS_RECORD_AUDIO);
             }
         }
-        //If permission is granted, then go ahead recording audio
+        // If permission is granted, then go ahead recording audio
         else if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //Handling callback
+    // Handling callback
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
