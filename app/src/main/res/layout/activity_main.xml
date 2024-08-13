@@ -45,30 +45,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:layout_weight="0"
-                android:text="Click the button below to scan BLE Audio devices to receive input audio signals, and select a device to connect to"
+                android:text="Click the button below to connect to the BLE Audio device to receive input audio signals. Ensure that the device is switched on and ready to pair."
                 android:textSize="16sp" />
-
-            <Button
-                android:id="@+id/ScanBLEBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_weight="0"
-                android:text="Scan BLE Devices" />
-
-            <ListView
-                android:id="@+id/BLEListView"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_marginTop="10dp">
-            </ListView>
-
-            <TextView
-                android:id="@android:id/empty"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:text="No BLE devices found"
-                android:gravity="center"/>
 
             <Button
                 android:id="@+id/ConnectBLEBtn"
@@ -76,15 +54,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:layout_weight="0"
-                android:text="Connect to BLE Device" />
+                android:text="Connect to BLE Audio Device" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/AudioInferenceSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:id="@+id/AudioInferenceSection">
 
             <TextView
                 android:layout_width="match_parent"
@@ -111,14 +89,14 @@
                 android:text="Begin Audio Inference" />
 
             <TextView
-                android:id="@+id/ClassText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:layout_weight="0"
+                android:id="@+id/ClassText"
                 android:text="Detected Class: "
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"/>
         </LinearLayout>
 
     </LinearLayout>
