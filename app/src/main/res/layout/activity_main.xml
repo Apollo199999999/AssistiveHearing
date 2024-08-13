@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:layout_weight="0"
-                android:text="Click the button below to scan BLE Audio devices to receive input audio signals, and select a device to connect to."
+                android:text="Click the button below to scan BLE Audio devices to receive input audio signals, and select a device to connect to"
                 android:textSize="16sp" />
 
             <Button
@@ -60,8 +60,7 @@
                 android:id="@+id/BLEListView"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
-                android:layout_marginTop="10dp"
-                android:choiceMode="singleChoice">
+                android:layout_marginTop="10dp">
             </ListView>
 
             <TextView
