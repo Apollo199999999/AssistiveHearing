@@ -1,18 +1,10 @@
 package com.sic.assistivehearing;
 
-import static android.bluetooth.BluetoothDevice.BOND_BONDED;
-import static android.bluetooth.BluetoothDevice.BOND_BONDING;
-import static android.bluetooth.BluetoothDevice.BOND_NONE;
-import static android.bluetooth.BluetoothGatt.GATT_SUCCESS;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -50,7 +42,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -64,8 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
     // BLEListView variables
     public ArrayAdapter<String> BLEListViewArrayAdapter;
-    public ArrayList<String> BLEListViewItems = new ArrayList<String>();
-    public ArrayList<BluetoothDevice> ScannedBLEDevices = new ArrayList<BluetoothDevice>();
+    ArrayList<String> BLEListViewItems = new ArrayList<String>();
 
     //Timer to get recording samples
     public Timer recordTimer = new Timer();
@@ -89,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
             permsList.add(Manifest.permission.ACCESS_FINE_LOCATION);
             permsList.add(Manifest.permission.BLUETOOTH_SCAN);
             permsList.add(Manifest.permission.BLUETOOTH_CONNECT);
-            permsList.add(Manifest.permission.BLUETOOTH_ADVERTISE);
         }
         BluetoothPermissions = Arrays.copyOf(permsList.toArray(new String[0]), permsList.size());
     }
@@ -238,17 +227,13 @@ public class MainActivity extends AppCompatActivity {
         // Clear the listview that displays ble devices
         BLEListViewItems.clear();
         BLEListViewArrayAdapter.notifyDataSetChanged();
-        ScannedBLEDevices.clear();
 
         // Get bluetooth classes
         bluetoothManager = (BluetoothManager) this.getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
         bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
 
-        scanning = false;
-        bluetoothLeScanner.stopScan(leScanCallback);
-
-        if (!scanning && bluetoothAdapter.isEnabled()) {
+        if (!scanning) {
             // Stops scanning after a predefined scan period.
             handler.postDelayed(new Runnable() {
                 @Override
@@ -263,7 +248,8 @@ public class MainActivity extends AppCompatActivity {
 
             bluetoothLeScanner.startScan(leScanCallback);
         } else {
-            Toast.makeText(this, "Unable to scan for devices. Check that bluetooth is enabled.", Toast.LENGTH_LONG).show();
+            scanning = false;
+            bluetoothLeScanner.stopScan(leScanCallback);
         }
     }
 
@@ -281,7 +267,6 @@ public class MainActivity extends AppCompatActivity {
                     String DisplayItem = result.getScanRecord().getDeviceName() + ": " + BLEDevice.getAddress();
                     if (!BLEListViewItems.contains(DisplayItem)) {
                         BLEListViewItems.add(DisplayItem);
-                        ScannedBLEDevices.add(BLEDevice);
                         BLEListViewArrayAdapter.notifyDataSetChanged();
                     }
                 }
@@ -394,17 +379,6 @@ public class MainActivity extends AppCompatActivity {
         }
         v.setEnabled(enabled);
     }
-
-    public int getListViewSelectedIndex(ListView listView) {
-        for (int i = 0; i < listView.getAdapter().getCount(); i++) {
-            if (listView.isItemChecked(i)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
     //endregion
 
     //region Activity Lifecycle
@@ -417,7 +391,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout audioInferenceSection = (LinearLayout) findViewById(R.id.AudioInferenceSection);
         enableViews(audioInferenceSection, false);
 
-        // Event handlers for the buttons
+        // Event handlers for the 2 buttons
         Button scanBLEBtn = (Button) findViewById(R.id.ScanBLEBtn);
         scanBLEBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -434,14 +408,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button connectBLEBtn = (Button) findViewById(R.id.ConnectBLEBtn);
-        connectBLEBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                connectBLEBtnClicked((Button) view);
-            }
-        });
-
         // Attach ArrayAdapter to BLE devices ListView
         ListView bleListView = (ListView) findViewById(R.id.BLEListView);
         BLEListViewArrayAdapter = new ArrayAdapter<>(this,
@@ -449,15 +415,13 @@ public class MainActivity extends AppCompatActivity {
         bleListView.setAdapter(BLEListViewArrayAdapter);
 
         // Set placeholder text on listview
-        TextView emptyText = (TextView) findViewById(android.R.id.empty);
+        TextView emptyText = (TextView)findViewById(android.R.id.empty);
         bleListView.setEmptyView(emptyText);
     }
 
     @Override
     public void onDestroy() {
-        if (recorder != null) {
-            StopInference();
-        }
+        StopInference();
         super.onDestroy();
     }
 
@@ -467,37 +431,6 @@ public class MainActivity extends AppCompatActivity {
     public void scanBLEBtnClicked(Button connectBLEBtn) {
         // Request ble perms
         requestBluetoothPermissions();
-    }
-
-    @SuppressLint("MissingPermission")
-    public void connectBLEBtnClicked(Button startAudioInferenceBtn) {
-        // Connect to selected bluetooth device
-        ListView bleListView = (ListView) findViewById(R.id.BLEListView);
-        if (getListViewSelectedIndex(bleListView) == -1) {
-            Toast.makeText(this, "No Bluetooth device selected!", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        // Get the device selected by the user
-        BluetoothDevice selectedBLEDevice = ScannedBLEDevices.get(getListViewSelectedIndex(bleListView));
-        if (bluetoothAdapter.isEnabled()) {
-            selectedBLEDevice.connectGatt(this, false, new BluetoothGattCallback() {
-                @Override
-                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                    super.onConnectionStateChange(gatt, status, newState);
-
-                    if (newState == BluetoothProfile.STATE_CONNECTED) {
-                        // successfully connected to the GATT Server
-                        // bond with the device
-                        selectedBLEDevice.createBond();
-                    }
-                }
-            });
-        }
-        else {
-            Toast.makeText(this, "Failed to connect to device. Ensure that bluetooth is switched on.", Toast.LENGTH_LONG).show();
-        }
-
     }
 
     public void startAudioInferenceBtnClicked(Button startAudioInferenceBtn) {
