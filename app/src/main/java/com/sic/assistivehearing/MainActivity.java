@@ -1,11 +1,9 @@
 package com.sic.assistivehearing;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioRecord;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -28,8 +26,6 @@ import org.tensorflow.lite.task.core.BaseOptions;
 import org.w3c.dom.Text;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -47,81 +43,10 @@ public class MainActivity extends AppCompatActivity {
 
     //endregion
 
-    //region Request Bluetooth Permissions
-    // Create a request code for user's consent to bluetooth permissions.
-    // This will be used in handling callback
-    private final int PERMISSIONS_BLUETOOTH_REQUEST_CODE = 0;
-
-    public String[] BluetoothPermissions = new String[]{};
-
-    public void initializeBluetoothPerms() {
-        List<String> permsList = new ArrayList<String>();
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            permsList.add(Manifest.permission.BLUETOOTH);
-            permsList.add(Manifest.permission.BLUETOOTH_ADMIN);
-        }
-        else {
-            permsList.add(Manifest.permission.BLUETOOTH_SCAN);
-            permsList.add(Manifest.permission.BLUETOOTH_CONNECT);
-        }
-        BluetoothPermissions = Arrays.copyOf(permsList.toArray(new String[0]), permsList.size());
-    }
-
-    public  boolean hasPermissions(Context context, String... permissions) {
-        if (context != null && permissions != null) {
-            for (String permission : permissions) {
-                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    public boolean shouldShowRequestPermissionRationale(String... permissions) {
-        if (permissions != null) {
-            for (String permission : permissions) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission) ) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    private void requestBluetoothPermissions() {
-        initializeBluetoothPerms();
-
-        if (!hasPermissions(this, BluetoothPermissions)) {
-            // When permission is not granted by user, show them message why this permission is needed.
-            if (shouldShowRequestPermissionRationale(BluetoothPermissions)) {
-                Toast.makeText(this, "Please grant permissions to scan and connect to BLE devices", Toast.LENGTH_LONG).show();
-
-                //Give user option to still opt-in the permissions
-                ActivityCompat.requestPermissions(this,
-                        BluetoothPermissions,
-                        PERMISSIONS_BLUETOOTH_REQUEST_CODE);
-
-            } else {
-                // Show user dialog to grant permission to record audio
-                ActivityCompat.requestPermissions(this,
-                        BluetoothPermissions,
-                        PERMISSIONS_BLUETOOTH_REQUEST_CODE);
-            }
-        }
-        //If permission is granted, then go ahead recording audio
-        else if (hasPermissions(this, BluetoothPermissions)) {
-            //Go ahead with bluetooth stuff now
-            ScanBLEDevices();
-        }
-    }
-
-
-    //endregion
-
     //region Request Audio Permissions
-    // Create a request code for user's consent to recording audio.
+    // Create placeholder for user's consent to record_audio permission.
     // This will be used in handling callback
-    private final int PERMISSIONS_RECORD_REQUEST_CODE = 1;
+    private final int MY_PERMISSIONS_RECORD_AUDIO = 1;
 
     private void requestAudioPermissions() {
         if (ContextCompat.checkSelfPermission(this,
@@ -136,13 +61,13 @@ public class MainActivity extends AppCompatActivity {
                 //Give user option to still opt-in the permissions
                 ActivityCompat.requestPermissions(this,
                         new String[]{android.Manifest.permission.RECORD_AUDIO},
-                        PERMISSIONS_RECORD_REQUEST_CODE);
+                        MY_PERMISSIONS_RECORD_AUDIO);
 
             } else {
                 // Show user dialog to grant permission to record audio
                 ActivityCompat.requestPermissions(this,
                         new String[]{android.Manifest.permission.RECORD_AUDIO},
-                        PERMISSIONS_RECORD_REQUEST_CODE);
+                        MY_PERMISSIONS_RECORD_AUDIO);
             }
         }
         //If permission is granted, then go ahead recording audio
@@ -154,9 +79,7 @@ public class MainActivity extends AppCompatActivity {
             InitialiseAudioModel();
         }
     }
-    //endregion
 
-    //region Permissions callback
     //Handling callback
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -164,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case PERMISSIONS_RECORD_REQUEST_CODE: {
+            case MY_PERMISSIONS_RECORD_AUDIO: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted, yay!
@@ -176,28 +99,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return;
             }
-
-            case PERMISSIONS_BLUETOOTH_REQUEST_CODE: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // permission was granted, yay!
-                    ScanBLEDevices();
-                } else {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    Toast.makeText(this, "Permissions denied to access Bluetooth", Toast.LENGTH_LONG).show();
-                }
-                return;
-            }
         }
     }
 
-    //endregion
-
-    //region Bluetooth functions
-    public void ScanBLEDevices() {
-
-    }
     //endregion
 
     //region Audio Classification Model
@@ -345,13 +249,11 @@ public class MainActivity extends AppCompatActivity {
 
     //region Button event handling
     public void connectBLEBtnClicked(Button connectBLEBtn) {
-        requestBluetoothPermissions();
+
     }
 
     public void startAudioInferenceBtnClicked(Button startAudioInferenceBtn) {
         // Begin model initialisation
         requestAudioPermissions();
     }
-
-    //endregion
 }
