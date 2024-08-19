@@ -157,9 +157,17 @@ public class MainActivity extends AppCompatActivity {
         // Initialization
         requestAudioPermissions();
 
-        // Test receive TCP data
-        TextView tcpText = (TextView)findViewById(R.id.TCPText);
-        Thread thread = new Thread() {
+        // Event handlers
+        Button connectBtn = (Button)findViewById(R.id.ConnectBtn);
+        connectBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                onConnectBtnClick(v);
+            }
+        });
+    }
+
+    private void onConnectBtnClick(View v) {
+        Thread TCPThread = new Thread() {
             @Override
             public void run() {
                 try {
@@ -174,28 +182,20 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run(){
                                 // change UI elements here
-                                tcpText.setText(response);
+                                TextView tcpText = (TextView)findViewById(R.id.TCPText);
+                                tcpText.setText("Received data: " + response);
                             }
                         });
 
                     }
 
-                } catch (UnknownHostException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
                 }
-
                 catch (Exception e) {
-
                     e.printStackTrace();
                 }
             }
         };
-
-        thread.start();
+        TCPThread.start();
     }
 
     @Override
@@ -240,10 +240,12 @@ public class MainActivity extends AppCompatActivity {
                String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%";
 
                TextView textView = (TextView) findViewById(R.id.ClassText);
-               textView.setText(outputText);
+               textView.setText("ML model class: " +outputText);
            }
         }
     }
+
+
 
 
 }
