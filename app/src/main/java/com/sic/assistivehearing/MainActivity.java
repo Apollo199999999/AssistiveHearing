@@ -7,6 +7,8 @@ import android.media.AudioRecord;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,10 +23,17 @@ import org.tensorflow.lite.task.audio.classifier.Classifications;
 import org.tensorflow.lite.task.core.BaseOptions;
 import org.w3c.dom.Text;
 
+import java.io.BufferedReader;
+import java.io.Console;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.net.ServerSocket;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -147,6 +156,46 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialization
         requestAudioPermissions();
+
+        // Test receive TCP data
+        TextView tcpText = (TextView)findViewById(R.id.TCPText);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Socket socket = new Socket("192.168.4.1", 50000);
+
+                    BufferedReader stdIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+                    while (true) {
+                        String response = stdIn.readLine();
+
+                        runOnUiThread(new Runnable(){
+                            @Override
+                            public void run(){
+                                // change UI elements here
+                                tcpText.setText(response);
+                            }
+                        });
+
+                    }
+
+                } catch (UnknownHostException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+                catch (Exception e) {
+
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        thread.start();
     }
 
     @Override
