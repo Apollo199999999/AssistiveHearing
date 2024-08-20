@@ -304,25 +304,46 @@ public class MainActivity extends AppCompatActivity {
                TextView textView = (TextView) findViewById(R.id.ClassText);
                textView.setText("ML model class: " + outputText);
 
-               String TCPData = "";
+               // 2 elements for L buzzer, 2 elements for R buzzer
+               // First element stores "intensity" (1-3)
+               // Second element stores continuous (1)/intermittent(0)
+               byte[] soundData = new byte[4];
                if (dangerCategories.contains(category.toLowerCase())) {
-                   TCPData = "danger";
+                   // L
+                   soundData[0] = (byte)3;
+                   soundData[1] = (byte)1;
+
+                   // R
+                   soundData[2] = (byte)3;
+                   soundData[3] = (byte)1;
                } else if (alertCategories.contains(category.toLowerCase())) {
-                   TCPData = "warning";
+                   // L
+                   soundData[0] = (byte)2;
+                   soundData[1] = (byte)1;
+
+                   // R
+                   soundData[2] = (byte)2;
+                   soundData[3] = (byte)1;
                } else if (gtkCategories.contains(category.toLowerCase())) {
-                   TCPData = "gtk";
+                   // L
+                   soundData[0] = (byte)1;
+                   soundData[1] = (byte)0;
+
+                   // R
+                   soundData[2] = (byte)1;
+                   soundData[3] = (byte)0;
                }
 
-               if (TCPData.equals("")) {
+               if (soundData[0] == 0) {
                    return;
                }
-               String finalTCPData = TCPData;
+
                Thread sendThread = new Thread() {
                    @Override
                    public void run() {
                        try {
                            OutputStream writer = socket.getOutputStream();
-                           writer.write(finalTCPData.getBytes());
+                           writer.write(soundData);
                            writer.flush();
                            receiveAudioData = true;
                        } catch(Exception e) { Log.e("sic", "exception", e);}

@@ -12,7 +12,7 @@ void setup() {
 void loop()
 {
   digitalWrite(buzzer, HIGH);
-  tone(buzzer, 1000);
+  tone(buzzer, 1);
   delay(5000);
   noTone(buzzer);
   digitalWrite(buzzer, LOW);
