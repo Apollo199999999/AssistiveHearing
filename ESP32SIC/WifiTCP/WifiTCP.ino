@@ -32,10 +32,12 @@ void setup() {
   Serial.print(" started");
 }
 
+int i = 0;
+int buzzerData[4] = {0,0,0,0};
+
 void loop() {
   char TCP_Char;
   char serialChar;
-  int buzzerData[4];
   
   if (!connected) {
     // listen for incoming clients
@@ -57,18 +59,19 @@ void loop() {
     if (client.connected()) {
       
       // if characters sended from client is in the buffer
-      int i = 0;
       while ( client.available() ) { 
           // Client sends data
           TCP_Char = client.read(); // take one character out of the TCP-receive-buffer
-          if (i <= 3) {
+          if (i < 3) {
              buzzerData[i] = TCP_Char;
              i++;
           }
           if (i == 3) {
+            buzzerData[i] = TCP_Char;
             i = 0;
           }
-          Serial.print(TCP_Char, DEC);   // print it to the serial monitor
+
+          // Serial.println(TCP_Char, DEC);   // print it to the serial monitor
       }  
 
       // if characters have been typed into the serial monitor  
@@ -87,6 +90,10 @@ void loop() {
 
   // Play buzzer if applicable
   if (buzzerData[0] != 0) {
+    Serial.println(buzzerData[0]);
+    Serial.println(buzzerData[1]);
+    Serial.println(buzzerData[2]);
+    Serial.println(buzzerData[3]);
     // L
     digitalWrite(16, HIGH);
     tone(16, buzzerData[0] * 30);
@@ -103,5 +110,10 @@ void loop() {
     if (buzzerData[1] == 0) {
       delay(200);
     }
+
+    buzzerData[0] = 0;
+    buzzerData[1] = 0;
+    buzzerData[2] = 0;
+    buzzerData[3] = 0;
   }
 }
