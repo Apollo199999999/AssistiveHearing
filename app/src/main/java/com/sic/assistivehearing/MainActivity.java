@@ -81,9 +81,8 @@ public class MainActivity extends AppCompatActivity {
     });
 
     public List<String> gtkCategories = Arrays.asList(new String[]{
-        "Speech",
-        "Sneeze",
-
+        "speech",
+        "sneeze",
     });
 
     // Global AudioClassifer variables
@@ -93,6 +92,39 @@ public class MainActivity extends AppCompatActivity {
 
     // Timer to get recording samples
     public Timer recordTimer = new Timer();
+
+    // Networking crap
+    Socket socket;
+    Thread TCPThread = new Thread() {
+        @Override
+        public void run() {
+            try {
+                socket = new Socket("192.168.4.1", 50000);
+                BufferedReader stdIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+                while (true) {
+                    if (receiveAudioData == true) {
+                        String response = stdIn.readLine();
+
+                        runOnUiThread(new Runnable(){
+                            @Override
+                            public void run(){
+                                // change UI elements here
+                                TextView tcpText = (TextView)findViewById(R.id.TCPText);
+                                tcpText.setText("Received data: " + response);
+                            }
+                        });
+                    }
+                }
+
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
+    boolean receiveAudioData = false;
 
     // Create placeholder for user's consent to record_audio permission.
     // This will be used in handling callback
@@ -216,35 +248,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onConnectBtnClick(View v) {
-        Thread TCPThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Socket socket = new Socket("192.168.4.1", 50000);
-                    BufferedReader stdIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                    while (true) {
-                        String response = stdIn.readLine();
+        if (!TCPThread.isAlive()) {
+            TCPThread.start();
+            receiveAudioData = true;
+        }
 
-                        runOnUiThread(new Runnable(){
-                            @Override
-                            public void run(){
-                                // change UI elements here
-                                TextView tcpText = (TextView)findViewById(R.id.TCPText);
-                                tcpText.setText("Received data: " + response);
-                            }
-                        });
-
-                    }
-
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        TCPThread.start();
     }
+
 
     @Override
     public void onDestroy() {
@@ -293,49 +304,38 @@ public class MainActivity extends AppCompatActivity {
                TextView textView = (TextView) findViewById(R.id.ClassText);
                textView.setText("ML model class: " + outputText);
 
+               String TCPData = "";
                if (dangerCategories.contains(category.toLowerCase())) {
-                   Thread TCPThread = new Thread() {
-                       @Override
-                       public void run() {
-                           try {
-                               Socket socket = new Socket("192.168.4.1", 50000);
-                               String str = "danger";
-                               OutputStream writer = socket.getOutputStream();
-                               writer.write(str.getBytes());
-                               writer.flush();
-                           } catch(Exception e) { Log.e("sic", "exception", e);}
-                       }
-                   };
-                   TCPThread.start();
+                   TCPData = "danger";
                } else if (alertCategories.contains(category.toLowerCase())) {
-                   Thread TCPThread = new Thread() {
-                       @Override
-                       public void run() {
-                           try {
-                               Socket socket = new Socket("192.168.4.1", 50000);
-                               String str = "warning";
-                               OutputStream writer = socket.getOutputStream();
-                               writer.write(str.getBytes());
-                               writer.flush();
-                           } catch(Exception e) { Log.e("sic", "exception", e);}
-                       }
-                   };
-                   TCPThread.start();
+                   TCPData = "warning";
                } else if (gtkCategories.contains(category.toLowerCase())) {
-                   Thread TCPThread = new Thread() {
-                       @Override
-                       public void run() {
-                           try {
-                               Socket socket = new Socket("192.168.4.1", 50000);
-                               String str = "gtk";
-                               OutputStream writer = socket.getOutputStream();
-                               writer.write(str.getBytes());
-                               writer.flush();
-                           } catch(Exception e) { Log.e("sic", "exception", e);}
-                       }
-                   };
-                   TCPThread.start();
+                   TCPData = "gtk";
                }
+
+               if (TCPData.equals("")) {
+                   return;
+               }
+               String finalTCPData = TCPData;
+               Thread sendThread = new Thread() {
+                   @Override
+                   public void run() {
+                       try {
+                           OutputStream writer = socket.getOutputStream();
+                           writer.write(finalTCPData.getBytes());
+                           writer.flush();
+                           receiveAudioData = true;
+                       } catch(Exception e) { Log.e("sic", "exception", e);}
+                   }
+               };
+
+               try {
+                   receiveAudioData = false;
+                   sendThread.start();
+               } catch (Exception e) {
+                   Log.e("sic", "exception", e);
+               }
+
            }
         }
     }
