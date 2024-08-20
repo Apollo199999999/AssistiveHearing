@@ -30,12 +30,62 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.net.ServerSocket;
 
+
 public class MainActivity extends AppCompatActivity {
+    public List<String> dangerCategories = Arrays.asList(new String[]
+    {
+        "vehicle horn",
+        "car horn",
+        "honking",
+        "bicycle",
+        "alarm",
+        "siren",
+        "civil defense siren",
+        "smoke detector, smoke alarm",
+        "fire alarm",
+        "explosion",
+        "gunshot, gunfire",
+        "shatter",
+    });
+
+    public List<String> alertCategories = Arrays.asList(new String[]{
+        "thump",
+        "thunder",
+        "shout",
+        "bellow",
+        "whoop",
+        "yell",
+        "screaming",
+        "bark",
+        "yip",
+        "bow-wow",
+        "hiss",
+        "roar",
+        "car",
+        "bus",
+        "emergency vehicle",
+        "police car (siren)",
+        "ambulance (siren)",
+        "fire engine, fire truck (siren)",
+        "doorbell",
+        "bang",
+        "slap, smack",
+        "breaking",
+        "whip",
+        "crushing"
+    });
+
+    public List<String> gtkCategories = Arrays.asList(new String[]{
+        "Speech",
+        "Sneeze",
+
+    });
 
     // Global AudioClassifer variables
     AudioClassifier classifier;
@@ -203,10 +253,13 @@ public class MainActivity extends AppCompatActivity {
         StopInference();
         super.onDestroy();
     }
+
+
     private class GetSamples extends TimerTask {
         //This thing's a goddamn mess
         @Override
         public void run() {
+
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -241,11 +294,28 @@ public class MainActivity extends AppCompatActivity {
 
                TextView textView = (TextView) findViewById(R.id.ClassText);
                textView.setText("ML model class: " +outputText);
+               if (dangerCategories.contains(category.toLowerCase()))
+               {
+
+               }
+               else if(alertCategories.contains(category.toLowerCase()))
+               {
+
+               }
+               else if(gtkCategories.contains(category.toLowerCase()))
+               {
+
+               }
+               else{
+
+               }
+
+
+
+
            }
         }
     }
-
-
 
 
 }
