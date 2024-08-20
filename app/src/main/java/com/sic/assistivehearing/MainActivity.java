@@ -28,6 +28,7 @@ import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -40,9 +41,7 @@ import java.net.ServerSocket;
 public class MainActivity extends AppCompatActivity {
     public List<String> dangerCategories = Arrays.asList(new String[]
     {
-        "vehicle horn",
-        "car horn",
-        "honking",
+        "vehicle horn, car horn, honking",
         "bicycle",
         "alarm",
         "siren",
@@ -222,7 +221,6 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     Socket socket = new Socket("192.168.4.1", 50000);
-
                     BufferedReader stdIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                     while (true) {
@@ -293,26 +291,51 @@ public class MainActivity extends AppCompatActivity {
                String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%";
 
                TextView textView = (TextView) findViewById(R.id.ClassText);
-               textView.setText("ML model class: " +outputText);
-               if (dangerCategories.contains(category.toLowerCase()))
-               {
+               textView.setText("ML model class: " + outputText);
 
+               if (dangerCategories.contains(category.toLowerCase())) {
+                   Thread TCPThread = new Thread() {
+                       @Override
+                       public void run() {
+                           try {
+                               Socket socket = new Socket("192.168.4.1", 50000);
+                               String str = "danger";
+                               OutputStream writer = socket.getOutputStream();
+                               writer.write(str.getBytes());
+                               writer.flush();
+                           } catch(Exception e) { Log.e("sic", "exception", e);}
+                       }
+                   };
+                   TCPThread.start();
+               } else if (alertCategories.contains(category.toLowerCase())) {
+                   Thread TCPThread = new Thread() {
+                       @Override
+                       public void run() {
+                           try {
+                               Socket socket = new Socket("192.168.4.1", 50000);
+                               String str = "warning";
+                               OutputStream writer = socket.getOutputStream();
+                               writer.write(str.getBytes());
+                               writer.flush();
+                           } catch(Exception e) { Log.e("sic", "exception", e);}
+                       }
+                   };
+                   TCPThread.start();
+               } else if (gtkCategories.contains(category.toLowerCase())) {
+                   Thread TCPThread = new Thread() {
+                       @Override
+                       public void run() {
+                           try {
+                               Socket socket = new Socket("192.168.4.1", 50000);
+                               String str = "gtk";
+                               OutputStream writer = socket.getOutputStream();
+                               writer.write(str.getBytes());
+                               writer.flush();
+                           } catch(Exception e) { Log.e("sic", "exception", e);}
+                       }
+                   };
+                   TCPThread.start();
                }
-               else if(alertCategories.contains(category.toLowerCase()))
-               {
-
-               }
-               else if(gtkCategories.contains(category.toLowerCase()))
-               {
-
-               }
-               else{
-
-               }
-
-
-
-
            }
         }
     }

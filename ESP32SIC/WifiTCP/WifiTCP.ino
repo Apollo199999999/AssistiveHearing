@@ -58,6 +58,8 @@ void loop() {
       // if characters sended from client is in the buffer
       while ( client.available() ) { 
           // TODO: Client sends data
+          TCP_Char = client.read(); // take one character out of the TCP-receive-buffer
+          Serial.write(TCP_Char);   // print it to the serial monitor
       }  
 
       // if characters have been typed into the serial monitor  
