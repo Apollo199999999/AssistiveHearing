@@ -1,4 +1,4 @@
-const int buzzer = 17;  // Buzzer pin
+const int buzzer = 16;  // Buzzer pin
 
 
 void setup() {

@@ -32,8 +32,7 @@ void setup() {
   Serial.print(" started");
 }
 
-int i = 0;
-int buzzerData[4] = {0,0,0,0};
+int buzzerData[4] = {9,9,9,9};
 
 void loop() {
   char TCP_Char;
@@ -59,23 +58,25 @@ void loop() {
     if (client.connected()) {
       
       // if characters sended from client is in the buffer
+      int i = 0;
       while ( client.available() ) { 
           // Client sends data
           TCP_Char = client.read(); // take one character out of the TCP-receive-buffer
           if (i < 3) {
+            // print it to the serial monitor
              buzzerData[i] = TCP_Char;
              i++;
           }
-          if (i == 3) {
+          else if (i == 3) {  // print it to the serial monitor
             buzzerData[i] = TCP_Char;
             i = 0;
           }
 
-          // Serial.println(TCP_Char, DEC);   // print it to the serial monitor
+//          Serial.println(i, DEC);
       }  
 
       // if characters have been typed into the serial monitor  
-      while (Serial.available()) {
+      while (Serial.available()) {  
         char serialChar = Serial.read(); // take character out of the serial buffer
         Serial.write(serialChar); // print local echo
         client.write(serialChar); // send character over TCP to client
@@ -89,31 +90,30 @@ void loop() {
   }
 
   // Play buzzer if applicable
-  if (buzzerData[0] != 0) {
-    Serial.println(buzzerData[0]);
-    Serial.println(buzzerData[1]);
-    Serial.println(buzzerData[2]);
-    Serial.println(buzzerData[3]);
+  if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
+    Serial.println(buzzerData[0], DEC);
+    Serial.println(buzzerData[1], DEC);
+    Serial.println(buzzerData[2], DEC);
+    Serial.println(buzzerData[3], DEC);
     // L
     digitalWrite(16, HIGH);
     tone(16, buzzerData[0] * 30);
     //R
     digitalWrite(17, HIGH);
     tone(17, buzzerData[2] * 30);
-    delay(200);
-
-    digitalWrite(16, LOW);
-    noTone(16);
-    digitalWrite(17, LOW);
-    noTone(17);
     
-    if (buzzerData[1] == 0) {
-      delay(200);
-    }
+    delay(5000);
 
-    buzzerData[0] = 0;
-    buzzerData[1] = 0;
-    buzzerData[2] = 0;
-    buzzerData[3] = 0;
+    noTone(16);
+    digitalWrite(16, LOW);
+
+    noTone(17);
+    digitalWrite(17, LOW);
+
+
+    buzzerData[0] = 9;
+    buzzerData[1] = 9;
+    buzzerData[2] = 9;
+    buzzerData[3] = 9;
   }
 }
