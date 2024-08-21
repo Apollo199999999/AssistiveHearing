@@ -2,6 +2,7 @@
 #include <WiFi.h>         // include the right library for ESP32
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>  // or ESP8266
+#include <driver/adc.h>
 #endif
 
 // this tcp_server demo-code creates its own WiFi-network 
@@ -10,6 +11,36 @@
 
 const char* ssid     = "ESP32-AP";
 const uint16_t portNumber = 50000; // System Ports 0-1023, User Ports 1024-49151, dynamic and/or Private Ports 49152-65535
+
+#include <driver/adc.h>
+
+#define AUDIO_BUFFER_MAX 800
+
+uint8_t audioBuffer[AUDIO_BUFFER_MAX];
+uint8_t transmitBuffer[AUDIO_BUFFER_MAX];
+uint32_t bufferPointer = 0;
+
+bool transmitNow = false;
+
+hw_timer_t * timer = NULL; // our timer
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED; 
+
+void IRAM_ATTR onTimer() {
+  portENTER_CRITICAL_ISR(&timerMux); // says that we want to run critical code and don't want to be interrupted
+  int adcVal = adc1_get_voltage(ADC1_CHANNEL_7); // reads the ADC
+  uint8_t value = map(adcVal, 0 , 4096, 0, 255);  // converts the value to 0..255 (8bit)
+  audioBuffer[bufferPointer] = value; // stores the value
+  bufferPointer++;
+ 
+  if (bufferPointer == AUDIO_BUFFER_MAX) { // when the buffer is full
+    bufferPointer = 0;
+    memcpy(transmitBuffer, audioBuffer, AUDIO_BUFFER_MAX); // copy buffer into a second buffer
+    transmitNow = true; // sets the value true so we know that we can transmit now
+  }
+  portEXIT_CRITICAL_ISR(&timerMux); // says that we have run our critical code
+}
+
+
 
 WiFiServer server(portNumber);
 WiFiClient client;
@@ -33,6 +64,15 @@ void setup() {
   Serial.print("TCP-Server on port ");
   Serial.print(portNumber);
   Serial.print(" started");
+
+  adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
+  adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_0db); // connects the ADC 1 with channel 0 (GPIO 36)
+
+  timer = timerBegin(0, 80, true); // 80 Prescaler
+  timerAttachInterrupt(timer, &onTimer, true); // binds the handling function to our timer 
+  timerAlarmWrite(timer, 125, true);
+  timerAlarmEnable(timer);
+
 }
 
 void loop() {
@@ -77,12 +117,18 @@ void loop() {
 //          Serial.println(i, DEC);
       }  
 
-      // if characters have been typed into the serial monitor  
-      while (Serial.available()) {  
-        char serialChar = Serial.read(); // take character out of the serial buffer
-        Serial.write(serialChar); // print local echo
-        client.write(serialChar); // send character over TCP to client
-      }
+//      // if characters have been typed into the serial monitor  
+//      while (Serial.available()) {  
+//        char serialChar = Serial.read(); // take character out of the serial buffer
+//        Serial.write(serialChar); // print local echo
+//        client.write(serialChar); // send character over TCP to client
+//      }
+
+        if (transmitNow) { // checks if the buffer is full
+          transmitNow = false;
+          client.write((const uint8_t *)audioBuffer, sizeof(audioBuffer)); // sending the buffer to our server
+          Serial.println("audio transmit")
+        }
     } 
     else {
       Serial.println("Client has disconnected the TCP-connection");
@@ -93,11 +139,10 @@ void loop() {
   
   // Play buzzer if applicable
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
-    Serial.println(buzzerData[0] * 30);
-    Serial.println(buzzerData[2] * 30);
     // L
     digitalWrite(16, HIGH);
     tone(16, buzzerData[0] * 30);
+
     //R
     digitalWrite(17, HIGH);
     tone(17, buzzerData[2] * 30);
