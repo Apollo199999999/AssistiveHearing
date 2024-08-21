@@ -1,4 +1,4 @@
-const int buzzer = 17;  // Buzzer pin
+const int buzzer = 16;  // Buzzer pin
 
 
 void setup() {
@@ -13,8 +13,8 @@ void loop()
 {
   digitalWrite(16, HIGH);
   tone(16, 31);
-  digitalWrite(17, HIGH);
-  tone(17, 31);
+//  digitalWrite(17, HIGH);
+//  tone(17, 31);
 //  delay(5000);
 //  noTone(buzzer);
 //  digitalWrite(buzzer, LOW);

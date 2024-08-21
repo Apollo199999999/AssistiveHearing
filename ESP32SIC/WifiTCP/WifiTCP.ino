@@ -93,6 +93,8 @@ void loop() {
   
   // Play buzzer if applicable
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
+    Serial.println(buzzerData[0] * 30);
+    Serial.println(buzzerData[2] * 30);
     // L
     digitalWrite(16, HIGH);
     tone(16, buzzerData[0] * 30);
