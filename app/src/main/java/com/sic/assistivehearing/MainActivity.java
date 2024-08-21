@@ -3,7 +3,10 @@ package com.sic.assistivehearing;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -23,6 +26,7 @@ import org.tensorflow.lite.task.audio.classifier.Classifications;
 import org.tensorflow.lite.task.core.BaseOptions;
 import org.w3c.dom.Text;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.Console;
 import java.io.IOException;
@@ -31,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
@@ -95,31 +100,44 @@ public class MainActivity extends AppCompatActivity {
 
     // Networking crap
     Socket socket;
+
     Thread TCPThread = new Thread() {
         @Override
         public void run() {
             try {
-                socket = new Socket("192.168.4.1", 50000);
-                BufferedReader stdIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                int minBufferSize = AudioTrack.getMinBufferSize(8000,
+                        AudioFormat.CHANNEL_CONFIGURATION_MONO,
+                        AudioFormat.ENCODING_PCM_8BIT);
 
+                AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
+                        AudioFormat.CHANNEL_CONFIGURATION_MONO,
+                        AudioFormat.ENCODING_PCM_8BIT, minBufferSize,
+                        AudioTrack.MODE_STREAM);
+
+                socket = new Socket("192.168.4.1", 50000);
+                BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
+                at.play();
                 while (true) {
                     if (receiveAudioData == true) {
-                        String response = stdIn.readLine();
+                        byte[] music = new byte[1];
+                        int i = stdIn.read(music);
+                        at.write(music, 0, i);
 
-                        runOnUiThread(new Runnable(){
-                            @Override
-                            public void run(){
-                                // change UI elements here
-                                TextView tcpText = (TextView)findViewById(R.id.TCPText);
-                                tcpText.setText("Received data: " + response);
-                            }
-                        });
+
+//                        runOnUiThread(new Runnable(){
+//                            @Override
+//                            public void run(){
+//                                // change UI elements here
+//                                TextView tcpText = (TextView)findViewById(R.id.TCPText);
+//                                tcpText.setText("Received data: " + response);
+//                            }
+//                        });
                     }
                 }
 
             }
             catch (Exception e) {
-                e.printStackTrace();
+                Log.e("sic", "exception", e);
             }
         }
     };

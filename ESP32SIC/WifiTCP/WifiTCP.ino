@@ -2,17 +2,15 @@
 #include <WiFi.h>         // include the right library for ESP32
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>  // or ESP8266
-#include <driver/adc.h>
 #endif
-
+#include <Arduino.h>
+#include <driver/adc.h>
 // this tcp_server demo-code creates its own WiFi-network 
 // where the tcp_client demo-code connects to
 // the ssid and the portNumber must be the same to make it work
 
 const char* ssid     = "ESP32-AP";
 const uint16_t portNumber = 50000; // System Ports 0-1023, User Ports 1024-49151, dynamic and/or Private Ports 49152-65535
-
-#include <driver/adc.h>
 
 #define AUDIO_BUFFER_MAX 800
 
@@ -27,7 +25,7 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR onTimer() {
   portENTER_CRITICAL_ISR(&timerMux); // says that we want to run critical code and don't want to be interrupted
-  int adcVal = adc1_get_voltage(ADC1_CHANNEL_7); // reads the ADC
+  int adcVal = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
   uint8_t value = map(adcVal, 0 , 4096, 0, 255);  // converts the value to 0..255 (8bit)
   audioBuffer[bufferPointer] = value; // stores the value
   bufferPointer++;
@@ -79,7 +77,8 @@ void loop() {
   char TCP_Char;
   char serialChar;
   int buzzerData[4] = {9,9,9,9};
-
+  Serial.println(audioBuffer[bufferPointer], DEC);
+  
   if (!connected) {
     // listen for incoming clients
     client = server.available();
@@ -127,7 +126,7 @@ void loop() {
         if (transmitNow) { // checks if the buffer is full
           transmitNow = false;
           client.write((const uint8_t *)audioBuffer, sizeof(audioBuffer)); // sending the buffer to our server
-          Serial.println("audio transmit")
+          Serial.println("audio transmit");
         }
     } 
     else {
