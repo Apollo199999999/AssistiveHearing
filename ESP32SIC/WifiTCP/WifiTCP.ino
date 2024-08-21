@@ -16,6 +16,9 @@ WiFiClient client;
 bool connected = false;
 
 void setup() {
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
+  
   Serial.begin(115200);
   Serial.println( F("Setup-Start") );
   Serial.print("Creating AP (Access Point) with name#");
@@ -32,12 +35,11 @@ void setup() {
   Serial.print(" started");
 }
 
-int buzzerData[4] = {9,9,9,9};
-
 void loop() {
   char TCP_Char;
   char serialChar;
-  
+  int buzzerData[4] = {9,9,9,9};
+
   if (!connected) {
     // listen for incoming clients
     client = server.available();
@@ -88,40 +90,26 @@ void loop() {
       connected = false;
     }
   }
-
+  
   // Play buzzer if applicable
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
-    Serial.println(buzzerData[0], DEC);
-    Serial.println(buzzerData[1], DEC);
-    Serial.println(buzzerData[2], DEC);
-    Serial.println(buzzerData[3], DEC);
     // L
     digitalWrite(16, HIGH);
     tone(16, buzzerData[0] * 30);
     //R
     digitalWrite(17, HIGH);
     tone(17, buzzerData[2] * 30);
+
+    delay(1000);
     
-//    delay(700);
-//
-//    noTone(16);
-//    digitalWrite(16, LOW);
-//
-//    noTone(17);
-//    digitalWrite(17, LOW);
-//
-//    delay(700);
-    
-    buzzerData[0] = 9;
-    buzzerData[1] = 9;
-    buzzerData[2] = 9;
-    buzzerData[3] = 9;
-  }
-  else {
     noTone(16);
     digitalWrite(16, LOW);
 
     noTone(17);
     digitalWrite(17, LOW);
+
+    if (buzzerData[1] == 0 && buzzerData[3] == 0) {
+      delay(1000);
+    }
   }
 }

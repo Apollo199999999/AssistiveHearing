@@ -11,8 +11,10 @@ void setup() {
  
 void loop()
 {
-  digitalWrite(buzzer, HIGH);
-  tone(buzzer, 1);
+  digitalWrite(16, HIGH);
+  tone(16, 31);
+  digitalWrite(17, HIGH);
+  tone(17, 31);
 //  delay(5000);
 //  noTone(buzzer);
 //  digitalWrite(buzzer, LOW);
