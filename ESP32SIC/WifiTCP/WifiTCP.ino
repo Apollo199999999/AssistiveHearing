@@ -102,18 +102,26 @@ void loop() {
     digitalWrite(17, HIGH);
     tone(17, buzzerData[2] * 30);
     
-    delay(5000);
-
+//    delay(700);
+//
+//    noTone(16);
+//    digitalWrite(16, LOW);
+//
+//    noTone(17);
+//    digitalWrite(17, LOW);
+//
+//    delay(700);
+    
+    buzzerData[0] = 9;
+    buzzerData[1] = 9;
+    buzzerData[2] = 9;
+    buzzerData[3] = 9;
+  }
+  else {
     noTone(16);
     digitalWrite(16, LOW);
 
     noTone(17);
     digitalWrite(17, LOW);
-
-
-    buzzerData[0] = 9;
-    buzzerData[1] = 9;
-    buzzerData[2] = 9;
-    buzzerData[3] = 9;
   }
 }
