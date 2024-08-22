@@ -7,10 +7,28 @@
     tools:context=".MainActivity">
 
     <LinearLayout
-        android:gravity="center_horizontal"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textSize="45sp"
+            android:layout_marginTop="30sp"
+        ></TextView>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="211dp"
+        android:layout_height="341dp"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
+        android:layout_margin= "10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -24,23 +42,34 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/TCPText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No TCP data received"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginBottom="15dp"/>
 
         <Button
             android:id="@+id/ConnectBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Connect to ESP32"/>
+            android:text="Connect to ESP32" />
+        <TextView
+            android:id="@+id/TCPText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Disconnected"
+            android:textColor="@color/red"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="50dp"
+            android:text="How to use:"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" 1. Disconnect from Mobile data \n 2. Connect to Wifi AP \n 3. Click the button"/>
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

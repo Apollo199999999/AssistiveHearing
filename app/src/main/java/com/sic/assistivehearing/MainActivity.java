@@ -193,8 +193,8 @@ public class MainActivity extends AppCompatActivity {
                     // permission was granted, yay!
                     InitialiseAudioModel();
                 } else {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
+                    /* permission denied, boo! Disable the
+                       functionality that depends on this permission.*/
                     Toast.makeText(this, "Permissions Denied to record audio", Toast.LENGTH_LONG).show();
                 }
                 return;
@@ -264,12 +264,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
+    int x = 1;
     private void onConnectBtnClick(View v) {
-
+        TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
         if (!TCPThread.isAlive()) {
             TCPThread.start();
             receiveAudioData = true;
+            TCPconnect.setText("Connected!");
+            x = 0;
+            TCPconnect.setTextColor(0xFFFFFFFF);
+
+        }
+        else if(x == 1){
+            TCPconnect.setText("Connection Failed.");
         }
 
     }
