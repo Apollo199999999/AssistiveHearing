@@ -77,7 +77,7 @@ void loop() {
   char TCP_Char;
   char serialChar;
   int buzzerData[4] = {9,9,9,9};
-  Serial.println(audioBuffer[bufferPointer], DEC);
+  // Serial.println(audioBuffer[bufferPointer], DEC);
   
   if (!connected) {
     // listen for incoming clients
@@ -140,11 +140,11 @@ void loop() {
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
     // L
     digitalWrite(16, HIGH);
-    tone(16, buzzerData[0] * 30);
+    tone(16, exp(buzzerData[0] * 2) + 30);
 
     //R
     digitalWrite(17, HIGH);
-    tone(17, buzzerData[2] * 30);
+    tone(17, exp(buzzerData[2] * 2) + 30);
 
     delay(1000);
     
