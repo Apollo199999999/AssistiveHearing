@@ -101,37 +101,28 @@ public class MainActivity extends AppCompatActivity {
     // Networking crap
     Socket socket;
 
+    int minBufferSize = AudioTrack.getMinBufferSize(8000,
+            AudioFormat.CHANNEL_CONFIGURATION_MONO,
+            AudioFormat.ENCODING_PCM_8BIT);
+
+    AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
+            AudioFormat.CHANNEL_CONFIGURATION_MONO,
+            AudioFormat.ENCODING_PCM_8BIT, minBufferSize,
+            AudioTrack.MODE_STREAM);
+
     Thread TCPThread = new Thread() {
         @Override
         public void run() {
             try {
-                int minBufferSize = AudioTrack.getMinBufferSize(8000,
-                        AudioFormat.CHANNEL_CONFIGURATION_MONO,
-                        AudioFormat.ENCODING_PCM_8BIT);
-
-                AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
-                        AudioFormat.CHANNEL_CONFIGURATION_MONO,
-                        AudioFormat.ENCODING_PCM_8BIT, minBufferSize,
-                        AudioTrack.MODE_STREAM);
-
                 socket = new Socket("192.168.4.1", 50000);
+                connectESP = true;
                 BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
-                at.play();
+
                 while (true) {
                     if (receiveAudioData == true) {
                         byte[] music = new byte[1];
                         int i = stdIn.read(music);
                         at.write(music, 0, i);
-
-
-//                        runOnUiThread(new Runnable(){
-//                            @Override
-//                            public void run(){
-//                                // change UI elements here
-//                                TextView tcpText = (TextView)findViewById(R.id.TCPText);
-//                                tcpText.setText("Received data: " + response);
-//                            }
-//                        });
                     }
                 }
 
@@ -263,19 +254,32 @@ public class MainActivity extends AppCompatActivity {
                 onConnectBtnClick(v);
             }
         });
+
+        Button playBtn = (Button)findViewById(R.id.PlayBtn);
+        playBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                at.play();
+            }
+        });
+
+        Button pauseBtn = (Button)findViewById(R.id.PauseBtn);
+        pauseBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                at.stop();
+            }
+        });
     }
-    int x = 1;
+    boolean connectESP = false;
     private void onConnectBtnClick(View v) {
         TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
         if (!TCPThread.isAlive()) {
             TCPThread.start();
             receiveAudioData = true;
             TCPconnect.setText("Connected!");
-            x = 0;
             TCPconnect.setTextColor(0xFFFFFFFF);
 
         }
-        else if(x == 1){
+        else if(!connectESP){
             TCPconnect.setText("Connection Failed.");
         }
 

@@ -50,6 +50,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Connect to ESP32" />
+
+        <Button
+            android:id="@+id/PlayBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Play received audio" />
+
+        <Button
+            android:id="@+id/PauseBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stop received audio" />
+
         <TextView
             android:id="@+id/TCPText"
             android:layout_width="wrap_content"
