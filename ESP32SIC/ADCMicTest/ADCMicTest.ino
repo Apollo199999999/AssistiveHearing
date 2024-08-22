@@ -7,8 +7,8 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
 
-  // adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
-  // adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); 
+  adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
+  adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); 
 }
 
 void loop() {
@@ -16,7 +16,7 @@ void loop() {
   
   Serial.print("ADC Signal:");
 
-  Serial.print(analogRead(35), DEC);
+  Serial.print(adc1_get_raw(ADC1_CHANNEL_7), DEC);
 
   Serial.print(",");
 

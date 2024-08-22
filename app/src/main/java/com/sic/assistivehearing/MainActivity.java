@@ -116,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 socket = new Socket("192.168.4.1", 50000);
                 connectESP = true;
+                at.play();
                 BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
 
                 while (true) {
@@ -229,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                 classifier.getRequiredTensorAudioFormat().getSampleRate()) * 1000;
 
         long interval = (long)(lengthInMilliSeconds * (1 - 0.5));
-        recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
+        //recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
 
     }
 
@@ -255,19 +256,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button playBtn = (Button)findViewById(R.id.PlayBtn);
-        playBtn.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                at.play();
-            }
-        });
 
-        Button pauseBtn = (Button)findViewById(R.id.PauseBtn);
-        pauseBtn.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                at.stop();
-            }
-        });
     }
     boolean connectESP = false;
     private void onConnectBtnClick(View v) {

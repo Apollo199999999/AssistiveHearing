@@ -64,7 +64,7 @@ void setup() {
   Serial.print(" started");
 
   adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
-  adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_0db); // connects the ADC 1 with channel 0 (GPIO 36)
+  adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); // connects the ADC 1 with channel 7 (GPIO 35)
 
   timer = timerBegin(0, 80, true); // 80 Prescaler
   timerAttachInterrupt(timer, &onTimer, true); // binds the handling function to our timer 
@@ -113,15 +113,7 @@ void loop() {
             i = 0;
           }
 
-//          Serial.println(i, DEC);
       }  
-
-//      // if characters have been typed into the serial monitor  
-//      while (Serial.available()) {  
-//        char serialChar = Serial.read(); // take character out of the serial buffer
-//        Serial.write(serialChar); // print local echo
-//        client.write(serialChar); // send character over TCP to client
-//      }
 
         if (transmitNow) { // checks if the buffer is full
           transmitNow = false;
