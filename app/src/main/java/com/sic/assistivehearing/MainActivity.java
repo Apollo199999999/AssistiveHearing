@@ -103,11 +103,11 @@ public class MainActivity extends AppCompatActivity {
 
     int minBufferSize = AudioTrack.getMinBufferSize(8000,
             AudioFormat.CHANNEL_CONFIGURATION_MONO,
-            AudioFormat.ENCODING_PCM_8BIT);
+            AudioFormat.ENCODING_PCM_16BIT);
 
     AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
             AudioFormat.CHANNEL_CONFIGURATION_MONO,
-            AudioFormat.ENCODING_PCM_8BIT, minBufferSize,
+            AudioFormat.ENCODING_PCM_16BIT, minBufferSize,
             AudioTrack.MODE_STREAM);
 
     boolean receiveAudioData = false;
@@ -255,9 +255,14 @@ public class MainActivity extends AppCompatActivity {
 
                     while (true) {
                         if (receiveAudioData == true) {
-                            byte[] music = new byte[1];
+                            byte[] music = new byte[2];
                             int i = stdIn.read(music);
-                            at.write(music, 0, i);
+                            int val = (music[0] & 0xff) |
+                                    ((music[1] & 0xff) << 8);
+                            short[] arr = new short[1];
+                            arr[0] = (short)val;
+
+                            at.write(arr, 0, 1);
                         }
                     }
 

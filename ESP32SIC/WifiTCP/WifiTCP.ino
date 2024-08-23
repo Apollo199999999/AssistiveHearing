@@ -12,7 +12,7 @@
 const char* ssid     = "ESP32-AP";
 const uint16_t portNumber = 50000; // System Ports 0-1023, User Ports 1024-49151, dynamic and/or Private Ports 49152-65535
 
-#define AUDIO_BUFFER_MAX 800
+#define AUDIO_BUFFER_MAX 1600
 
 uint8_t audioBuffer[AUDIO_BUFFER_MAX];
 uint8_t transmitBuffer[AUDIO_BUFFER_MAX];
@@ -26,8 +26,10 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 void IRAM_ATTR onTimer() {
   portENTER_CRITICAL_ISR(&timerMux); // says that we want to run critical code and don't want to be interrupted
   int adcVal = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
-  uint8_t value = map(adcVal, 0 , 4096, 0, 255);  // converts the value to 0..255 (8bit)
-  audioBuffer[bufferPointer] = value; // stores the value
+  uint16_t value = map(adcVal, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
+  audioBuffer[bufferPointer] = value & 0xff; // stores the value
+  bufferPointer++;
+  audioBuffer[bufferPointer] = (value >> 8); // stores the value
   bufferPointer++;
  
   if (bufferPointer == AUDIO_BUFFER_MAX) { // when the buffer is full
