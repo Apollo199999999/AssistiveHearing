@@ -110,30 +110,6 @@ public class MainActivity extends AppCompatActivity {
             AudioFormat.ENCODING_PCM_8BIT, minBufferSize,
             AudioTrack.MODE_STREAM);
 
-    Thread TCPThread = new Thread() {
-        @Override
-        public void run() {
-            try {
-                socket = new Socket("192.168.4.1", 50000);
-                connectESP = true;
-                at.play();
-                BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
-
-                while (true) {
-                    if (receiveAudioData == true) {
-                        byte[] music = new byte[1];
-                        int i = stdIn.read(music);
-                        at.write(music, 0, i);
-                    }
-                }
-
-            }
-            catch (Exception e) {
-                Log.e("sic", "exception", e);
-            }
-        }
-    };
-
     boolean receiveAudioData = false;
 
     // Create placeholder for user's consent to record_audio permission.
@@ -187,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     /* permission denied, boo! Disable the
                        functionality that depends on this permission.*/
-                    Toast.makeText(this, "Permissions Denied to record audio", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Permissions denied to record audio!", Toast.LENGTH_LONG).show();
                 }
                 return;
             }
@@ -261,16 +237,46 @@ public class MainActivity extends AppCompatActivity {
     boolean connectESP = false;
     private void onConnectBtnClick(View v) {
         TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
-        if (!TCPThread.isAlive()) {
-            TCPThread.start();
-            receiveAudioData = true;
-            TCPconnect.setText("Connected!");
-            TCPconnect.setTextColor(0xFFFFFFFF);
 
-        }
-        else if(!connectESP){
-            TCPconnect.setText("Connection Failed.");
-        }
+        Thread TCPThread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    socket = new Socket("192.168.4.1", 50000);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TCPconnect.setTextColor(0xFFFFFFFF);
+                            TCPconnect.setText("Connected!");
+                        }
+                    });
+                    at.play();
+                    BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
+
+                    while (true) {
+                        if (receiveAudioData == true) {
+                            byte[] music = new byte[1];
+                            int i = stdIn.read(music);
+                            at.write(music, 0, i);
+                        }
+                    }
+
+                }
+                catch (Exception e) {
+                    Log.e("sic", "exception", e);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TCPconnect.setTextColor(0xFFFFFFFF);
+                            TCPconnect.setText("Connection Failed.");
+                        }
+                    });
+                }
+            }
+        };
+
+        receiveAudioData = true;
+        TCPThread.start();
 
     }
 
