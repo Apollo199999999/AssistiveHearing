@@ -5,6 +5,7 @@
 #endif
 #include <Arduino.h>
 #include <driver/adc.h>
+#include <driver/i2s.h>
 // this tcp_server demo-code creates its own WiFi-network 
 // where the tcp_client demo-code connects to
 // the ssid and the portNumber must be the same to make it work
@@ -12,32 +13,11 @@
 const char* ssid     = "ESP32-AP";
 const uint16_t portNumber = 50000; // System Ports 0-1023, User Ports 1024-49151, dynamic and/or Private Ports 49152-65535
 
-#define AUDIO_BUFFER_MAX 800
+#define ADC_SAMPLES_COUNT 800
 
-uint8_t audioBuffer[AUDIO_BUFFER_MAX];
-uint8_t transmitBuffer[AUDIO_BUFFER_MAX];
-uint32_t bufferPointer = 0;
+uint8_t transmitBuffer[ADC_SAMPLES_COUNT];
 
 bool transmitNow = false;
-
-hw_timer_t * timer = NULL; // our timer
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED; 
-
-void IRAM_ATTR onTimer() {
-  portENTER_CRITICAL_ISR(&timerMux); // says that we want to run critical code and don't want to be interrupted
-  int adcVal = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
-  uint8_t value = map(adcVal, 0 , 4096, 0, 255);  // converts the value to 0..255 (8bit)
-  audioBuffer[bufferPointer] = value; // stores the value
-  bufferPointer++;
- 
-  if (bufferPointer == AUDIO_BUFFER_MAX) { // when the buffer is full
-    bufferPointer = 0;
-    memcpy(transmitBuffer, audioBuffer, AUDIO_BUFFER_MAX); // copy buffer into a second buffer
-    transmitNow = true; // sets the value true so we know that we can transmit now
-  }
-  portEXIT_CRITICAL_ISR(&timerMux); // says that we have run our critical code
-}
-
 
 
 WiFiServer server(portNumber);
@@ -63,15 +43,65 @@ void setup() {
   Serial.print(portNumber);
   Serial.print(" started");
 
-  adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
-  adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); // connects the ADC 1 with channel 7 (GPIO 35)
+  i2s_config_t i2s_config = {
+      .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
+      .sample_rate = 40000,
+      .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+      .communication_format = I2S_COMM_FORMAT_I2S_LSB,
+      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+      .dma_buf_count = 2,
+      .dma_buf_len = 1024,
+      .use_apll = false,
+      .tx_desc_auto_clear = false,
+      .fixed_mclk = 0};
 
-  timer = timerBegin(0, 80, true); // 80 Prescaler
-  timerAttachInterrupt(timer, &onTimer, true); // binds the handling function to our timer 
-  timerAlarmWrite(timer, 125, true);
-  timerAlarmEnable(timer);
+  //install and start i2s driver
+  i2s_driver_install(I2S_NUM_0, &i2s_config, 4, &i2s_queue);
 
+  //init ADC pad
+  i2s_set_adc_mode(ADC_UNIT_1, ADC1_CHANNEL_7);
+
+  // enable the ADC
+  i2s_adc_enable(I2S_NUM_0);
+
+  // start a task to read samples from I2S
+  TaskHandle_t readerTaskHandle;
+  xTaskCreatePinnedToCore(readerTask, "Reader Task", 8192, this, 1, &readerTaskHandle, 0);
 }
+
+void readerTask(void *param)
+{
+    I2SSampler *sampler = (I2SSampler *)param;
+    while (true)
+    {
+        // wait for some data to arrive on the queue
+        i2s_event_t evt;
+        if (xQueueReceive(sampler->i2s_queue, &evt, portMAX_DELAY) == pdPASS)
+        {
+            if (evt.type == I2S_EVENT_RX_DONE)
+            {
+                size_t bytesRead = 0;
+                do
+                {
+                    // try and fill up our audio buffer
+                    size_t bytesToRead = (ADC_SAMPLES_COUNT - sampler->audioBufferPos) * 2;
+                    void *bufferPosition = (void *)(sampler->currentAudioBuffer + sampler->audioBufferPos);
+                    // read from i2s
+                    i2s_read(I2S_NUM_0, bufferPosition, bytesToRead, &bytesRead, 10 / portTICK_PERIOD_MS);
+                    sampler->audioBufferPos += bytesRead / 2;
+                    if (sampler->audioBufferPos == ADC_SAMPLES_COUNT)
+                    {
+                        // do something with the sample - e.g. notify another task to do some processing
+                        memcpy(transmitBuffer, sampler->currentAudioBuffer, ADC_SAMPLES_COUNT); // copy buffer into a second buffer
+                        transmitNow = true; // sets the value true so we know that we can transmit now
+                    }
+                } while (bytesRead > 0);
+            }
+        }
+    }
+}
+
 
 void loop() {
   char TCP_Char;
@@ -117,7 +147,7 @@ void loop() {
 
         if (transmitNow) { // checks if the buffer is full
           transmitNow = false;
-          client.write((const uint8_t *)audioBuffer, sizeof(audioBuffer)); // sending the buffer to our server
+          client.write((const uint8_t *)transmitBuffer, sizeof(transmitBuffer)); // sending the buffer to our server
           Serial.println("audio transmit");
         }
     } 
@@ -151,3 +181,4 @@ void loop() {
     }
   }
 }
+
