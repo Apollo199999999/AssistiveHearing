@@ -12,41 +12,44 @@
 const char* ssid     = "ESP32-AP";
 const uint16_t portNumber = 50000; // System Ports 0-1023, User Ports 1024-49151, dynamic and/or Private Ports 49152-65535
 
+// For writing mic data to an audio buffer
 #define AUDIO_BUFFER_MAX 1600
 
 uint8_t audioBuffer[AUDIO_BUFFER_MAX];
 uint8_t transmitBuffer[AUDIO_BUFFER_MAX];
 uint32_t bufferPointer = 0;
 
+// Whether to transmit the audio data via TCP
 bool transmitNow = false;
 
 hw_timer_t * timer = NULL; // our timer
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED; 
 
-void IRAM_ATTR onTimer() {
+void IRAM_ATTR getMicSamples() {
   portENTER_CRITICAL_ISR(&timerMux); // says that we want to run critical code and don't want to be interrupted
   int adcVal = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
   uint16_t value = map(adcVal, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
-  audioBuffer[bufferPointer] = value & 0xff; // stores the value
+  audioBuffer[bufferPointer] = value & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
   bufferPointer++;
-  audioBuffer[bufferPointer] = (value >> 8); // stores the value
+  audioBuffer[bufferPointer] = (value >> 8); 
   bufferPointer++;
  
   if (bufferPointer == AUDIO_BUFFER_MAX) { // when the buffer is full
     bufferPointer = 0;
     memcpy(transmitBuffer, audioBuffer, AUDIO_BUFFER_MAX); // copy buffer into a second buffer
-    transmitNow = true; // sets the value true so we know that we can transmit now
+    transmitNow = true; // sets the value true so we know that we can transmit the audio buffer via TCP
   }
   portEXIT_CRITICAL_ISR(&timerMux); // says that we have run our critical code
 }
 
 
-
+// Configure the AP for this ESP32
 WiFiServer server(portNumber);
 WiFiClient client;
 bool connected = false;
 
 void setup() {
+  // Configure the buzzers
   pinMode(16, OUTPUT);
   pinMode(17, OUTPUT);
   
@@ -68,69 +71,78 @@ void setup() {
   adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
   adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); // connects the ADC 1 with channel 7 (GPIO 35)
 
+  // We create a timer to gather audio samples from the microphone via ADC
+  // In an ESP32, there are 4 hardware timers in total, denoted by an ID from 0 to 3, that we pass in timerBegin.
+  // Each timer runs at 80MHz by default, that we can divide by a prescaler value to lower its rate
+  // In this case, we are creating a timer that runs at a rate 80MHz/80 = 1 MHz.
+  // This timer will then count upwards starting from 0, every 1 microsecond.
   timer = timerBegin(0, 80, true); // 80 Prescaler
-  timerAttachInterrupt(timer, &onTimer, true); // binds the handling function to our timer 
-  timerAlarmWrite(timer, 125, true);
-  timerAlarmEnable(timer);
 
+  // To actually get the timer to execute anything, we can get the timer to execute a function when it is interrupted.
+  timerAttachInterrupt(timer, &getMicSamples, true); // binds the handling function to our timer 
+
+  // We configure when we want the timer to interrupt, so that it can get audio samples.
+  // In this case, it interrupts when its counter reaches 125, giving us a sample rate of 10^6 / 125 = 8000Hz
+  timerAlarmWrite(timer, 125, true);
+
+  // Start the timer
+  timerAlarmEnable(timer);
 }
 
 void loop() {
   char TCP_Char;
   char serialChar;
+
+  // To store buzzer commands sent via TCP from the Android app
   int buzzerData[4] = {9,9,9,9};
-  // Serial.println(audioBuffer[bufferPointer], DEC);
   
   if (!connected) {
-    // listen for incoming clients
+    // Listen for incoming clients
     client = server.available();
     if (client) {
-      Serial.println("\n Got a client connected to my WiFi !");
+      Serial.println("\n A client has connected to this Wifi access point.");
       if (client.connected()) {
-        Serial.println("an now this client has connected over TCP!");
-        Serial.println("if client sends characters");
-        Serial.println("they were printed to the serial monitor");
+        Serial.println("This client is now connected over TCP.");
         connected = true;
       } else {
-        Serial.println("but it's not connected over TCP!");        
+        Serial.println("This client is not connected over TCP. Closing the connection...");        
         client.stop();  // close the connection:
       }
     }
   } 
-  else {
-    if (client.connected()) {
-      
-      // if characters sended from client is in the buffer
-      int i = 0;
-      while ( client.available() ) { 
-          // Client sends data
-          TCP_Char = client.read(); // take one character out of the TCP-receive-buffer
-          if (i < 3) {
-            // print it to the serial monitor
-             buzzerData[i] = TCP_Char;
-             i++;
-          }
-          else if (i == 3) {  // print it to the serial monitor
+  else if (client.connected()) {
+    int i = 0;
+    // If the client has sent data over TCP, read all of it
+    while (client.available()) { 
+        // Read one character from the TCP buffer sent by the client
+        TCP_Char = client.read(); 
+
+        // Populate the buzzerData array
+        if (i < 3) {
             buzzerData[i] = TCP_Char;
-            i = 0;
-          }
-
-      }  
-
-        if (transmitNow) { // checks if the buffer is full
-          transmitNow = false;
-          client.write((const uint8_t *)audioBuffer, sizeof(audioBuffer)); // sending the buffer to our server
-          Serial.println("audio transmit");
+            i++;
         }
-    } 
-    else {
-      Serial.println("Client has disconnected the TCP-connection");
-      client.stop();  // close the connection:
-      connected = false;
+        else if (i == 3) { 
+          buzzerData[i] = TCP_Char;
+          i = 0;
+        }
+    }  
+
+    if (transmitNow) { // checks if the audio buffer is full
+      transmitNow = false;
+      client.write((const uint8_t *)audioBuffer, sizeof(audioBuffer)); // sending the buffer to our server
+      Serial.println("audio transmit");
     }
+  }
+  else {
+    Serial.println("Client has disconnected from TCP.");
+    client.stop();  // close the connection:
+    connected = false;
   }
   
   // Play buzzer if applicable
+  // If all 4 values in the buzzerData array aren't 9, it means that they have been populated via TCP.
+  // TODO: Move this to a separate timer so it doesn't block TCP operations in loop()
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
     // L
     digitalWrite(16, HIGH);
