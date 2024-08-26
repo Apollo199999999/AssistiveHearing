@@ -50,7 +50,7 @@ WiFiClient client;
 bool connected = false;
 
 // timer
-BlockNot secondTimer(700);
+BlockNot secondTimer(350);
 
 void setup() {
   // Configure the buzzers
