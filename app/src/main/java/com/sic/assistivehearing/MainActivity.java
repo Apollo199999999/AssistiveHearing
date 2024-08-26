@@ -242,7 +242,6 @@ public class MainActivity extends AppCompatActivity {
                             recBufferPtr++;
 
                             if (recBufferPtr == 800) {
-                                Log.e("sic", "fuck you");
                                 recBufferPtr = 0;
                                 tensorAudio.load(recBuffer);
                             }
