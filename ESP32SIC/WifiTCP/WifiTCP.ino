@@ -91,6 +91,8 @@ void setup() {
 
   // Start the timer
   timerAlarmEnable(micTimer);
+
+  secondTimer.STOP;
 }
 
 // Whether buzzing should be continuous
@@ -172,15 +174,17 @@ void loop() {
       continuousBuzzing = true;
     }
 
-    
-
+    secondTimer.START_RESET;
   }
+
   if (secondTimer.TRIGGERED && continuousBuzzing == false) {  
     noTone(16);
     digitalWrite(16, LOW);
 
     noTone(17);
     digitalWrite(17, LOW);
+
+    secondTimer.STOP;
   }  
 }
 

@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
         float lengthInMilliSeconds = ((classifier.getRequiredInputBufferSize() * 1.0f) /
                 classifier.getRequiredTensorAudioFormat().getSampleRate()) * 1000;
 
-        long interval = (long)(lengthInMilliSeconds * (1 - 0.5));
+        long interval = (long)(lengthInMilliSeconds * (1));
         recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
 
     }
