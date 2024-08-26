@@ -78,15 +78,15 @@ void setup() {
   // We create a timer to gather audio samples from the microphone via ADC
   // In an ESP32, there are 4 hardware timers in total, denoted by an ID from 0 to 3, that we pass in timerBegin.
   // Each timer runs at 80MHz by default, that we can divide by a prescaler value to lower its rate
-  // In this case, we are creating a timer that runs at a rate 80MHz/80 = 1 MHz.
+  // In this case, we are creating a timer that runs at a rate 80MHz/40 = 2 MHz.
   // This timer will then count upwards starting from 0, every 1 microsecond.
-  micTimer = timerBegin(0, 80, true); // 80 Prescaler
+  micTimer = timerBegin(0, 40, true);
 
   // To actually get the timer to execute anything, we can get the timer to execute a function when it is interrupted.
   timerAttachInterrupt(micTimer, &getMicSamples, true); // binds the handling function to our timer 
 
   // We configure when we want the timer to interrupt, so that it can get audio samples.
-  // In this case, it interrupts when its counter reaches 125, giving us a sample rate of 10^6 / 125 = 8000Hz
+  // In this case, it interrupts when its counter reaches 125, giving us a sample rate of 2 * 10^6 / 125 = 16000Hz
   timerAlarmWrite(micTimer, 125, true);
 
   // Start the timer

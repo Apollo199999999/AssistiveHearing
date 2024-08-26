@@ -93,22 +93,14 @@ public class MainActivity extends AppCompatActivity {
     // Global AudioClassifer variables
     AudioClassifier classifier;
     TensorAudio tensorAudio;
-    AudioRecord recorder;
+    short[] recBuffer = new short[800];
+    int recBufferPtr = 0;
 
     // Timer to get recording samples
     public Timer recordTimer = new Timer();
 
     // Networking crap
     Socket socket;
-
-    int minBufferSize = AudioTrack.getMinBufferSize(8000,
-            AudioFormat.CHANNEL_CONFIGURATION_MONO,
-            AudioFormat.ENCODING_PCM_16BIT);
-
-    AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
-            AudioFormat.CHANNEL_CONFIGURATION_MONO,
-            AudioFormat.ENCODING_PCM_16BIT, minBufferSize,
-            AudioTrack.MODE_STREAM);
 
     boolean receiveAudioData = false;
 
@@ -184,20 +176,12 @@ public class MainActivity extends AppCompatActivity {
             // Create the classifier and required supporting objects
             classifier = AudioClassifier.createFromFileAndOptions(this, "YAMNet.tflite", options);
             tensorAudio = classifier.createInputTensorAudio();
-            recorder = classifier.createAudioRecord();
-            StartAudioInference();
 
         } catch (Exception e) {
             Log.e("AudioClassification", "TFLite failed to load with error: " + e.getMessage());
         }
     }
     public void StartAudioInference() {
-        if (recorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
-            return;
-        }
-
-        recorder.startRecording();
-
         // Each model will expect a specific audio recording length. This formula calculates that
         // length using the input buffer size and tensor format sample rate.
         // For example, YAMNET expects 0.975 second length recordings.
@@ -210,11 +194,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void StopInference() {
-        recorder.stop();
-        recordTimer.cancel();
-        recordTimer.purge();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -243,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     socket = new Socket("192.168.4.1", 50000);
+                    StartAudioInference();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -250,7 +230,6 @@ public class MainActivity extends AppCompatActivity {
                             TCPconnect.setText("Connected!");
                         }
                     });
-                    at.play();
                     BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
 
                     while (true) {
@@ -259,10 +238,14 @@ public class MainActivity extends AppCompatActivity {
                             int i = stdIn.read(music);
                             int val = (music[0] & 0xff) |
                                     ((music[1] & 0xff) << 8);
-                            short[] arr = new short[1];
-                            arr[0] = (short)val;
+                            recBuffer[recBufferPtr] = (short)val;
+                            recBufferPtr++;
 
-                            at.write(arr, 0, 1);
+                            if (recBufferPtr == 800) {
+                                Log.e("sic", "fuck you");
+                                recBufferPtr = 0;
+                                tensorAudio.load(recBuffer);
+                            }
                         }
                     }
 
@@ -272,6 +255,7 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            receiveAudioData = false;
                             TCPconnect.setTextColor(0xFFFFFFFF);
                             TCPconnect.setText("Connection Failed.");
                         }
@@ -285,6 +269,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void StopInference() {
+        recordTimer.cancel();
+        recordTimer.purge();
+    }
 
     @Override
     public void onDestroy() {
@@ -307,7 +295,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void classifyAudio() {
-            tensorAudio.load(recorder);
             List<Classifications> output = classifier.classify(tensorAudio);
             List<Category> categories = output.get(0).getCategories();
 
