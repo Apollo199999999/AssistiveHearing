@@ -5,6 +5,7 @@
 #endif
 #include <Arduino.h>
 #include <driver/adc.h>
+#include <BlockNot.h>   
 // this tcp_server demo-code creates its own WiFi-network 
 // where the tcp_client demo-code connects to
 // the ssid and the portNumber must be the same to make it work
@@ -22,7 +23,7 @@ uint32_t bufferPointer = 0;
 // Whether to transmit the audio data via TCP
 bool transmitNow = false;
 
-hw_timer_t * timer = NULL; // our timer
+hw_timer_t * micTimer = NULL; // our timer
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED; 
 
 void IRAM_ATTR getMicSamples() {
@@ -47,6 +48,9 @@ void IRAM_ATTR getMicSamples() {
 WiFiServer server(portNumber);
 WiFiClient client;
 bool connected = false;
+
+// timer
+BlockNot secondTimer(700);
 
 void setup() {
   // Configure the buzzers
@@ -76,25 +80,27 @@ void setup() {
   // Each timer runs at 80MHz by default, that we can divide by a prescaler value to lower its rate
   // In this case, we are creating a timer that runs at a rate 80MHz/80 = 1 MHz.
   // This timer will then count upwards starting from 0, every 1 microsecond.
-  timer = timerBegin(0, 80, true); // 80 Prescaler
+  micTimer = timerBegin(0, 80, true); // 80 Prescaler
 
   // To actually get the timer to execute anything, we can get the timer to execute a function when it is interrupted.
-  timerAttachInterrupt(timer, &getMicSamples, true); // binds the handling function to our timer 
+  timerAttachInterrupt(micTimer, &getMicSamples, true); // binds the handling function to our timer 
 
   // We configure when we want the timer to interrupt, so that it can get audio samples.
   // In this case, it interrupts when its counter reaches 125, giving us a sample rate of 10^6 / 125 = 8000Hz
-  timerAlarmWrite(timer, 125, true);
+  timerAlarmWrite(micTimer, 125, true);
 
   // Start the timer
-  timerAlarmEnable(timer);
+  timerAlarmEnable(micTimer);
 }
 
-void loop() {
-  char TCP_Char;
-  char serialChar;
+// Whether buzzing should be continuous
+bool continuousBuzzing = true;
 
+void loop() {
   // To store buzzer commands sent via TCP from the Android app
   int buzzerData[4] = {9,9,9,9};
+  char TCP_Char;
+  char serialChar;
   
   if (!connected) {
     // Listen for incoming clients
@@ -144,6 +150,12 @@ void loop() {
   // If all 4 values in the buzzerData array aren't 9, it means that they have been populated via TCP.
   // TODO: Move this to a separate timer so it doesn't block TCP operations in loop()
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
+    noTone(16);
+    digitalWrite(16, LOW);
+
+    noTone(17);
+    digitalWrite(17, LOW);
+
     // L
     digitalWrite(16, HIGH);
     tone(16, exp(buzzerData[0] * 2) + 30);
@@ -152,17 +164,23 @@ void loop() {
     digitalWrite(17, HIGH);
     tone(17, exp(buzzerData[2] * 2) + 30);
 
-    delay(1000);
+    // Determine if buzzing shld be continuous
+    if (buzzerData[1] == 0 && buzzerData[3] == 0) {
+      continuousBuzzing = false;
+    }
+    else {
+      continuousBuzzing = true;
+    }
+
     
+
+  }
+  if (secondTimer.TRIGGERED && continuousBuzzing == false) {  
     noTone(16);
     digitalWrite(16, LOW);
 
     noTone(17);
     digitalWrite(17, LOW);
-
-    if (buzzerData[1] == 0 && buzzerData[3] == 0) {
-      delay(1000);
-    }
-  }
+  }  
 }
 

@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
                 classifier.getRequiredTensorAudioFormat().getSampleRate()) * 1000;
 
         long interval = (long)(lengthInMilliSeconds * (1 - 0.5));
-        //recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
+        recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
 
     }
 
