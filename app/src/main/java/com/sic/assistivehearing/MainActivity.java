@@ -93,8 +93,11 @@ public class MainActivity extends AppCompatActivity {
     // Global AudioClassifer variables
     AudioClassifier classifier;
     TensorAudio tensorAudio;
-    short[] recBuffer = new short[800];
-    int recBufferPtr = 0;
+    AudioRecord recorder;
+    short[] recLBuffer = new short[800];
+    int recLBufferPtr = 0;
+    short[] recRBuffer = new short[800];
+    int recRBufferPtr = 0;
 
     // Timer to get recording samples
     public Timer recordTimer = new Timer();
@@ -176,12 +179,19 @@ public class MainActivity extends AppCompatActivity {
             // Create the classifier and required supporting objects
             classifier = AudioClassifier.createFromFileAndOptions(this, "YAMNet.tflite", options);
             tensorAudio = classifier.createInputTensorAudio();
+            recorder = classifier.createAudioRecord();
 
         } catch (Exception e) {
             Log.e("AudioClassification", "TFLite failed to load with error: " + e.getMessage());
         }
     }
     public void StartAudioInference() {
+        if (recorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+            return;
+        }
+
+        recorder.startRecording();
+
         // Each model will expect a specific audio recording length. This formula calculates that
         // length using the input buffer size and tensor format sample rate.
         // For example, YAMNET expects 0.975 second length recordings.
@@ -213,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    boolean connectESP = false;
+
     private void onConnectBtnClick(View v) {
         TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
 
@@ -234,17 +244,22 @@ public class MainActivity extends AppCompatActivity {
 
                     while (true) {
                         if (receiveAudioData == true) {
-                            byte[] music = new byte[2];
-                            int i = stdIn.read(music);
-                            int val = (music[0] & 0xff) |
-                                    ((music[1] & 0xff) << 8);
-                            recBuffer[recBufferPtr] = (short)val;
-                            recBufferPtr++;
+                            byte[] L = new byte[2];
+                            int Li = stdIn.read(L);
+                            int Lval = (L[0] & 0xff) |
+                                    ((L[1] & 0xff) << 8);
 
-                            if (recBufferPtr == 800) {
-                                recBufferPtr = 0;
-                                tensorAudio.load(recBuffer);
-                            }
+                            byte[] R = new byte[2];
+                            int Ri = stdIn.read(R);
+                            int Rval = (R[0] & 0xff) |
+                                    ((R[1] & 0xff) << 8);
+
+                            recLBuffer[recLBufferPtr] = (short)Lval;
+                            recLBufferPtr++;
+
+                            recRBuffer[recRBufferPtr] = (short)Rval;
+                            recRBufferPtr++;
+
                         }
                     }
 
@@ -269,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void StopInference() {
+        recorder.stop();
         recordTimer.cancel();
         recordTimer.purge();
     }
@@ -294,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void classifyAudio() {
+            tensorAudio.load(recorder);
             List<Classifications> output = classifier.classify(tensorAudio);
             List<Category> categories = output.get(0).getCategories();
 

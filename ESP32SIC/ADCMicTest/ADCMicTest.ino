@@ -8,19 +8,20 @@ void setup() {
   Serial.begin(115200);
 
   adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
+  adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_11db); 
   adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   
-  Serial.print("ADC Signal:");
+  Serial.print("ADC Signal6:");
 
-  Serial.print(adc1_get_raw(ADC1_CHANNEL_7), DEC);
+  Serial.print(adc1_get_raw(ADC1_CHANNEL_6), DEC);
 
   Serial.print(",");
 
-  Serial.print("Static Variable:");
+  Serial.print("ADC Signal7:");
 
-  Serial.println(static_variable, DEC);
+  Serial.println(adc1_get_raw(ADC1_CHANNEL_7), DEC);
 }

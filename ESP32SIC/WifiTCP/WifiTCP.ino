@@ -14,7 +14,7 @@ const char* ssid     = "ESP32-AP";
 const uint16_t portNumber = 50000; // System Ports 0-1023, User Ports 1024-49151, dynamic and/or Private Ports 49152-65535
 
 // For writing mic data to an audio buffer
-#define AUDIO_BUFFER_MAX 1600
+#define AUDIO_BUFFER_MAX 3200
 
 uint8_t audioBuffer[AUDIO_BUFFER_MAX];
 uint8_t transmitBuffer[AUDIO_BUFFER_MAX];
@@ -28,11 +28,19 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR getMicSamples() {
   portENTER_CRITICAL_ISR(&timerMux); // says that we want to run critical code and don't want to be interrupted
-  int adcVal = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
-  uint16_t value = map(adcVal, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
-  audioBuffer[bufferPointer] = value & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
+  int adcVal7 = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
+  int adcVal6 = adc1_get_raw(ADC1_CHANNEL_6); // reads the ADC
+
+  uint16_t value7 = map(adcVal7, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
+  audioBuffer[bufferPointer] = value7 & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
   bufferPointer++;
-  audioBuffer[bufferPointer] = (value >> 8); 
+  audioBuffer[bufferPointer] = (value7 >> 8); 
+  bufferPointer++;
+
+  uint16_t value6 = map(adcVal6, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
+  audioBuffer[bufferPointer] = value6 & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
+  bufferPointer++;
+  audioBuffer[bufferPointer] = (value6 >> 8); 
   bufferPointer++;
  
   if (bufferPointer == AUDIO_BUFFER_MAX) { // when the buffer is full
@@ -74,19 +82,20 @@ void setup() {
 
   adc1_config_width(ADC_WIDTH_12Bit); // configure the analogue to digital converter
   adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db); // connects the ADC 1 with channel 7 (GPIO 35)
+  adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_11db); // connects the ADC 1 with channel 6 (GPIO 35)
 
   // We create a timer to gather audio samples from the microphone via ADC
   // In an ESP32, there are 4 hardware timers in total, denoted by an ID from 0 to 3, that we pass in timerBegin.
   // Each timer runs at 80MHz by default, that we can divide by a prescaler value to lower its rate
-  // In this case, we are creating a timer that runs at a rate 80MHz/40 = 2 MHz.
+  // In this case, we are creating a timer that runs at a rate 80MHz/80 = 1 MHz.
   // This timer will then count upwards starting from 0, every 1 microsecond.
-  micTimer = timerBegin(0, 40, true);
+  micTimer = timerBegin(0, 80, true);
 
   // To actually get the timer to execute anything, we can get the timer to execute a function when it is interrupted.
   timerAttachInterrupt(micTimer, &getMicSamples, true); // binds the handling function to our timer 
 
   // We configure when we want the timer to interrupt, so that it can get audio samples.
-  // In this case, it interrupts when its counter reaches 125, giving us a sample rate of 2 * 10^6 / 125 = 16000Hz
+  // In this case, it interrupts when its counter reaches 125, giving us a sample rate of 10^6 / 125 = 8000Hz
   timerAlarmWrite(micTimer, 125, true);
 
   // Start the timer
