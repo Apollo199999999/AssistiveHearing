@@ -94,9 +94,9 @@ public class MainActivity extends AppCompatActivity {
     AudioClassifier classifier;
     TensorAudio tensorAudio;
     AudioRecord recorder;
-    short[] recLBuffer = new short[800];
+    short[] recLBuffer = new short[3200];
     int recLBufferPtr = 0;
-    short[] recRBuffer = new short[800];
+    short[] recRBuffer = new short[3200];
     int recRBufferPtr = 0;
 
     // Timer to get recording samples
@@ -104,7 +104,14 @@ public class MainActivity extends AppCompatActivity {
 
     // Networking crap
     Socket socket;
+    int minBufferSize = AudioTrack.getMinBufferSize(8000,
+            AudioFormat.CHANNEL_CONFIGURATION_MONO,
+            AudioFormat.ENCODING_PCM_16BIT);
 
+    AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
+            AudioFormat.CHANNEL_CONFIGURATION_MONO,
+            AudioFormat.ENCODING_PCM_16BIT, minBufferSize,
+            AudioTrack.MODE_STREAM);
     boolean receiveAudioData = false;
 
     // Create placeholder for user's consent to record_audio permission.
@@ -241,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                     BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
-
+                    at.play();
                     while (true) {
                         if (receiveAudioData == true) {
                             byte[] L = new byte[2];
@@ -259,6 +266,19 @@ public class MainActivity extends AppCompatActivity {
 
                             recRBuffer[recRBufferPtr] = (short)Rval;
                             recRBufferPtr++;
+
+                            if (recLBufferPtr == 3200) {
+                                recLBufferPtr = 0;
+                            }
+                            if (recRBufferPtr == 3200) {
+                                recRBufferPtr = 0;
+                            }
+
+                            int val = (Lval + Rval) / 2;
+                            short[] arr = new short[1];
+                            arr[0] = (short)val;
+
+                            at.write(arr, 0, 1);
 
                         }
                     }
