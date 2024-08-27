@@ -178,7 +178,6 @@ public class MainActivity extends AppCompatActivity {
 
         AudioClassifier.AudioClassifierOptions options =
                 AudioClassifier.AudioClassifierOptions.builder()
-                        .setScoreThreshold(0.3f)
                         .setBaseOptions(baseOptionsBuilder.build())
                         .build();
 
@@ -332,82 +331,91 @@ public class MainActivity extends AppCompatActivity {
         public void classifyAudio() {
             tensorAudio.load(recorder);
             List<Classifications> output = classifier.classify(tensorAudio);
-            List<Category> categories = output.get(0).getCategories();
+            List<Category> unmodifiedCategories = output.get(0).getCategories();
 
-           if (categories.size() > 0) {
-               //Get the most likely emotion
-               //Initialize max with first element of array.
-               float maxProbability = categories.get(0).getScore();
-               int maxIndex = 0;
-               //Loop through the array
-               for (int i = 0; i < categories.size(); i++) {
-                   //Compare elements of array with max
-                   if (categories.get(i).getScore() > maxProbability) {
-                       maxProbability = categories.get(i).getScore();
-                       maxIndex = i;
+           if (unmodifiedCategories.size() > 0) {
+               //Get the 5 most likely sounds
+               List<Category> categories = new ArrayList(unmodifiedCategories);
+
+               String text = "";
+               for (int j = 0; j < 5; j++) {
+                   //Initialize max with first element of array.
+                   float maxProbability = categories.get(0).getScore();
+                   int maxIndex = 0;
+                   //Loop through the array
+                   for (int i = 0; i < categories.size(); i++) {
+                       //Compare elements of array with max
+                       if (categories.get(i).getScore() > maxProbability) {
+                           maxProbability = categories.get(i).getScore();
+                           maxIndex = i;
+                       }
                    }
+
+                   //Get the associated emotion
+                   String category = categories.get(maxIndex).getLabel();
+                   @SuppressLint("DefaultLocale")
+                   String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%\n";
+                   text += outputText;
+
+                   categories.remove(maxIndex);
                }
 
-               //Get the associated emotion
-               String category = categories.get(maxIndex).getLabel();
-               @SuppressLint("DefaultLocale")
-               String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%";
 
                TextView textView = (TextView) findViewById(R.id.ClassText);
-               textView.setText("ML model class: " + outputText);
+               textView.setText("ML model class: " + text);
 
-               // 2 elements for L buzzer, 2 elements for R buzzer
-               // First element stores "intensity" (1-3)
-               // Second element stores continuous (1)/intermittent(0)
-               byte[] soundData = new byte[4];
-               if (dangerCategories.contains(category.toLowerCase())) {
-                   // L
-                   soundData[0] = (byte)3;
-                   soundData[1] = (byte)1;
-
-                   // R
-                   soundData[2] = (byte)3;
-                   soundData[3] = (byte)1;
-               } else if (alertCategories.contains(category.toLowerCase())) {
-                   // L
-                   soundData[0] = (byte)2;
-                   soundData[1] = (byte)1;
-
-                   // R
-                   soundData[2] = (byte)2;
-                   soundData[3] = (byte)1;
-               } else if (gtkCategories.contains(category.toLowerCase())) {
-                   // L
-                   soundData[0] = (byte)1;
-                   soundData[1] = (byte)0;
-
-                   // R
-                   soundData[2] = (byte)1;
-                   soundData[3] = (byte)0;
-               }
-
-               if (soundData[0] == 0) {
-                   return;
-               }
-
-               Thread sendThread = new Thread() {
-                   @Override
-                   public void run() {
-                       try {
-                           OutputStream writer = socket.getOutputStream();
-                           writer.write(soundData);
-                           writer.flush();
-                           receiveAudioData = true;
-                       } catch(Exception e) { Log.e("sic", "exception", e);}
-                   }
-               };
-
-               try {
-                   receiveAudioData = false;
-                   sendThread.start();
-               } catch (Exception e) {
-                   Log.e("sic", "exception", e);
-               }
+//               // 2 elements for L buzzer, 2 elements for R buzzer
+//               // First element stores "intensity" (1-3)
+//               // Second element stores continuous (1)/intermittent(0)
+//               byte[] soundData = new byte[4];
+//               if (dangerCategories.contains(category.toLowerCase())) {
+//                   // L
+//                   soundData[0] = (byte)3;
+//                   soundData[1] = (byte)1;
+//
+//                   // R
+//                   soundData[2] = (byte)3;
+//                   soundData[3] = (byte)1;
+//               } else if (alertCategories.contains(category.toLowerCase())) {
+//                   // L
+//                   soundData[0] = (byte)2;
+//                   soundData[1] = (byte)1;
+//
+//                   // R
+//                   soundData[2] = (byte)2;
+//                   soundData[3] = (byte)1;
+//               } else if (gtkCategories.contains(category.toLowerCase())) {
+//                   // L
+//                   soundData[0] = (byte)1;
+//                   soundData[1] = (byte)0;
+//
+//                   // R
+//                   soundData[2] = (byte)1;
+//                   soundData[3] = (byte)0;
+//               }
+//
+//               if (soundData[0] == 0) {
+//                   return;
+//               }
+//
+//               Thread sendThread = new Thread() {
+//                   @Override
+//                   public void run() {
+//                       try {
+//                           OutputStream writer = socket.getOutputStream();
+//                           writer.write(soundData);
+//                           writer.flush();
+//                           receiveAudioData = true;
+//                       } catch(Exception e) { Log.e("sic", "exception", e);}
+//                   }
+//               };
+//
+//               try {
+//                   receiveAudioData = false;
+//                   sendThread.start();
+//               } catch (Exception e) {
+//                   Log.e("sic", "exception", e);
+//               }
 
            }
         }
