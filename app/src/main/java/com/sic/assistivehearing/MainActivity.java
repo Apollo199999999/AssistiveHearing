@@ -7,6 +7,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.media.MediaRecorder;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -20,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.audio.TensorAudio;
 import org.tensorflow.lite.support.label.Category;
 import org.tensorflow.lite.task.audio.classifier.AudioClassifier;
@@ -43,52 +45,52 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.net.ServerSocket;
 
-
+@SuppressWarnings("all")
 public class MainActivity extends AppCompatActivity {
     public List<String> dangerCategories = Arrays.asList(new String[]
-    {
-        "vehicle horn, car horn, honking",
-        "bicycle",
-        "alarm",
-        "siren",
-        "civil defense siren",
-        "smoke detector, smoke alarm",
-        "fire alarm",
-        "explosion",
-        "gunshot, gunfire",
-        "shatter",
-    });
+            {
+                    "vehicle horn, car horn, honking",
+                    "bicycle",
+                    "alarm",
+                    "siren",
+                    "civil defense siren",
+                    "smoke detector, smoke alarm",
+                    "fire alarm",
+                    "explosion",
+                    "gunshot, gunfire",
+                    "shatter",
+            });
 
     public List<String> alertCategories = Arrays.asList(new String[]{
-        "thump",
-        "thunder",
-        "shout",
-        "bellow",
-        "whoop",
-        "yell",
-        "screaming",
-        "bark",
-        "yip",
-        "bow-wow",
-        "hiss",
-        "roar",
-        "car",
-        "bus",
-        "emergency vehicle",
-        "police car (siren)",
-        "ambulance (siren)",
-        "fire engine, fire truck (siren)",
-        "doorbell",
-        "bang",
-        "slap, smack",
-        "breaking",
-        "whip",
-        "crushing"
+            "thump",
+            "thunder",
+            "shout",
+            "bellow",
+            "whoop",
+            "yell",
+            "screaming",
+            "bark",
+            "yip",
+            "bow-wow",
+            "hiss",
+            "roar",
+            "car",
+            "bus",
+            "emergency vehicle",
+            "police car (siren)",
+            "ambulance (siren)",
+            "fire engine, fire truck (siren)",
+            "doorbell",
+            "bang",
+            "slap, smack",
+            "breaking",
+            "whip",
+            "crushing"
     });
 
     public List<String> gtkCategories = Arrays.asList(new String[]{
-        "speech",
-        "sneeze",
+            "speech",
+            "sneeze",
     });
 
     // Global AudioClassifer variables
@@ -96,29 +98,16 @@ public class MainActivity extends AppCompatActivity {
     TensorAudio tensorAudio;
     AudioRecord recorder;
     NoiseSuppressor noiseSuppressor;
-    short[] recLBuffer = new short[3200];
-    int recLBufferPtr = 0;
-    short[] recRBuffer = new short[3200];
-    int recRBufferPtr = 0;
 
     // Timer to get recording samples
     public Timer recordTimer = new Timer();
 
     // Networking crap
     Socket socket;
-    int minBufferSize = AudioTrack.getMinBufferSize(8000,
-            AudioFormat.CHANNEL_CONFIGURATION_MONO,
-            AudioFormat.ENCODING_PCM_16BIT);
 
-    AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
-            AudioFormat.CHANNEL_CONFIGURATION_MONO,
-            AudioFormat.ENCODING_PCM_16BIT, minBufferSize,
-            AudioTrack.MODE_STREAM);
+    int TopLoudness = 0;
+    int BottomLoudness = 0;
 
-    int LLoudness = 0;
-    int RLoudness = 0;
-
-    boolean receiveAudioData = false;
 
     // Create placeholder for user's consent to record_audio permission.
     // This will be used in handling callback
@@ -177,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
     public void InitialiseAudioModel() {
         // Set general detection options, e.g. number of used threads
         BaseOptions.Builder baseOptionsBuilder = BaseOptions.builder()
@@ -191,21 +181,33 @@ public class MainActivity extends AppCompatActivity {
             // Create the classifier and required supporting objects
             classifier = AudioClassifier.createFromFileAndOptions(this, "YAMNet.tflite", options);
             tensorAudio = classifier.createInputTensorAudio();
-            recorder = classifier.createAudioRecord();
-            noiseSuppressor = NoiseSuppressor.create(recorder.getAudioSessionId());
 
+            int bufferSizeInBytes = AudioRecord.getMinBufferSize(16000,
+                    AudioFormat.CHANNEL_IN_STEREO,
+                    AudioFormat.ENCODING_PCM_FLOAT);
+            int bufferSizeMultiplier = 2;
+            int modelRequiredBufferSize = (int)classifier.getRequiredInputBufferSize() * DataType.FLOAT32.byteSize() * bufferSizeMultiplier;
+            if (bufferSizeInBytes < modelRequiredBufferSize) {
+                bufferSizeInBytes = modelRequiredBufferSize;
+            }
+
+            recorder = new AudioRecord(MediaRecorder.AudioSource.CAMCORDER,
+                    16000,
+                    AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_FLOAT,
+                    bufferSizeInBytes);
+            StartAudioInference();
+            classifier.createAudioRecord();
         } catch (Exception e) {
             Log.e("AudioClassification", "TFLite failed to load with error: " + e.getMessage());
         }
     }
+
     public void StartAudioInference() {
         if (recorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
             return;
         }
 
-        noiseSuppressor.setEnabled(true);
         recorder.startRecording();
-        noiseSuppressor.setEnabled(true);
 
         // Each model will expect a specific audio recording length. This formula calculates that
         // length using the input buffer size and tensor format sample rate.
@@ -214,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         float lengthInMilliSeconds = ((classifier.getRequiredInputBufferSize() * 1.0f) /
                 classifier.getRequiredTensorAudioFormat().getSampleRate()) * 1000;
 
-        long interval = (long)(lengthInMilliSeconds * (1));
+        long interval = (long) (lengthInMilliSeconds * (1));
         recordTimer.scheduleAtFixedRate(new GetSamples(), 0, interval);
 
     }
@@ -229,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
         requestAudioPermissions();
 
         // Event handlers
-        Button connectBtn = (Button)findViewById(R.id.ConnectBtn);
+        Button connectBtn = (Button) findViewById(R.id.ConnectBtn);
         connectBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 onConnectBtnClick(v);
@@ -239,15 +241,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private double calcLoudness(short[] PCMData) {
-        int sum = 0;
-        for (int i = 0; i < PCMData.length; i++) {
-            sum += PCMData[i];
-        }
-        double avg = sum / PCMData.length;
-
-        return avg;
-    }
 
     private void onConnectBtnClick(View v) {
         TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
@@ -257,7 +250,6 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     socket = new Socket("192.168.4.1", 50000);
-                    StartAudioInference();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -265,51 +257,11 @@ public class MainActivity extends AppCompatActivity {
                             TCPconnect.setText("Connected!");
                         }
                     });
-                    BufferedInputStream stdIn = new BufferedInputStream(socket.getInputStream());
-                    at.play();
-                    while (true) {
-                        if (receiveAudioData == true) {
-                            // L (GPIO 34, ADC6)
-                            byte[] L = new byte[2];
-                            int Li = stdIn.read(L);
-                            int Lval = (L[0] & 0xff) |
-                                    ((L[1] & 0xff) << 8);
-
-                            // R (GPIO 35, ADC7)
-                            byte[] R = new byte[2];
-                            int Ri = stdIn.read(R);
-                            int Rval = (R[0] & 0xff) |
-                                    ((R[1] & 0xff) << 8);
-
-                            recLBuffer[recLBufferPtr] = (short)Lval;
-                            recLBufferPtr++;
-
-                            recRBuffer[recRBufferPtr] = (short)Rval;
-                            recRBufferPtr++;
-
-                            if (recLBufferPtr == 3200) {
-                                recLBufferPtr = 0;
-                            }
-                            if (recRBufferPtr == 3200) {
-                                recRBufferPtr = 0;
-                            }
-
-                            int val = (Lval + Rval) / 2;
-                            short[] arr = new short[1];
-                            arr[0] = (short)val;
-
-                            at.write(arr, 0, 1);
-
-                        }
-                    }
-
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     Log.e("sic", "exception", e);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            receiveAudioData = false;
                             TCPconnect.setTextColor(0xFFFFFFFF);
                             TCPconnect.setText("Connection Failed.");
                         }
@@ -318,7 +270,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        receiveAudioData = true;
         TCPThread.start();
 
     }
@@ -350,49 +301,88 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void classifyAudio() {
-            tensorAudio.load(recorder);
+            // Convert stereo AudioRecord to mono
+            // Buffer reading somewhat stolen from decompiled tflite code
+            float[] newData = new float[recorder.getChannelCount() * recorder.getBufferSizeInFrames()];
+            int readLen = recorder.read(newData, 0, newData.length, 1);
+
+            // Calc the volume of each of the 2 streams
+            float[] LStream = new float[newData.length / 2];
+            float[] RStream = new float[newData.length / 2];
+            for (int i = 0; i < readLen / 2; i += 2) {
+                LStream[i / 2] = newData[i];
+                RStream[i / 2] = newData[i + 1];
+            }
+
+            double LLoudness  = 0.0;
+            for (int i = 0; i < LStream.length; i++) {
+                LLoudness += Math.abs(LStream[i]);
+            }
+            LLoudness = LLoudness / LStream.length;
+
+            double RLoudness  = 0.0;
+            for (int i = 0; i < RStream.length; i++) {
+                RLoudness += Math.abs(RStream[i]);
+            }
+            RLoudness = RLoudness / RStream.length;
+
+            if (RLoudness > LLoudness) {
+                TextView text = findViewById(R.id.SourceText);
+                text.setText("Bottom");
+                BottomLoudness = 1;
+            }
+            else if (RLoudness < LLoudness){
+                TextView text = findViewById(R.id.SourceText);
+                text.setText("Top");
+                TopLoudness = 1;
+            }
+            else {
+                BottomLoudness = 1;
+                TopLoudness = 1;
+            }
+
+            // Merge both audio streams into one for tflite
+            float[] PCMData = new float[newData.length / 2];
+            for (int i = 0; i < readLen / 2; i += 2) {
+                PCMData[i / 2] = (newData[i] + newData[i + 1]) / 2;
+            }
+
+            tensorAudio.load(PCMData);
             List<Classifications> output = classifier.classify(tensorAudio);
             List<Category> unmodifiedCategories = output.get(0).getCategories();
 
-            if (calcLoudness(recLBuffer) > calcLoudness(recRBuffer)) {
-                LLoudness = 1;
-            }
-            else {
-                RLoudness = 1;
-            }
-
             if (unmodifiedCategories.size() > 0) {
-               //Get the 5 most likely sounds
-               List<Category> categories = new ArrayList(unmodifiedCategories);
-               List<String> categoryLabels = new ArrayList<String>();
+                //Get the 5 most likely sounds
+                List<Category> categories = new ArrayList(unmodifiedCategories);
+                List<String> categoryLabels = new ArrayList<String>();
 
-               String text = "";
-               for (int j = 0; j < 5; j++) {
-                   //Initialize max with first element of array.
-                   float maxProbability = categories.get(0).getScore();
-                   int maxIndex = 0;
-                   //Loop through the array
-                   for (int i = 0; i < categories.size(); i++) {
-                       //Compare elements of array with max
-                       if (categories.get(i).getScore() > maxProbability) {
-                           maxProbability = categories.get(i).getScore();
-                           maxIndex = i;
-                       }
-                   }
+                String text = "";
+                for (int j = 0; j < 5; j++) {
+                    //Initialize max with first element of array.
+                    float maxProbability = categories.get(0).getScore();
+                    int maxIndex = 0;
+                    //Loop through the array
+                    for (int i = 0; i < categories.size(); i++) {
+                        //Compare elements of array with max
+                        if (categories.get(i).getScore() > maxProbability) {
+                            maxProbability = categories.get(i).getScore();
+                            maxIndex = i;
+                        }
+                    }
 
-                   //Get the associated emotion
-                   String category = categories.get(maxIndex).getLabel();
-                   @SuppressLint("DefaultLocale")
-                   String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%\n";
-                   text += outputText;
+                    //Get the associated emotion
+                    String category = categories.get(maxIndex).getLabel();
+                    @SuppressLint("DefaultLocale")
+                    String outputText = String.format("%s %.2f", category, maxProbability * 100) + "%\n";
+                    text += outputText;
 
-                   categoryLabels.add(category.toLowerCase());
-                   categories.remove(maxIndex);
-               }
+                    categoryLabels.add(category.toLowerCase());
+                    categories.remove(maxIndex);
+                }
 
 
-               TextView textView = (TextView) findViewById(R.id.ClassText);
-               textView.setText("ML model class: " + text);
+                TextView textView = (TextView) findViewById(R.id.ClassText);
+                textView.setText("ML model class: " + text);
 
                // 2 elements for L buzzer, 2 elements for R buzzer
                // First element stores "intensity" (1-3)
@@ -411,11 +401,11 @@ public class MainActivity extends AppCompatActivity {
 
                    if (categoryLabels.contains(dangerCategories.get(i).toLowerCase())) {
                        // L
-                       soundData[0] = (byte)(3 * LLoudness);
+                       soundData[0] = (byte)(3 * TopLoudness);
                        soundData[1] = (byte)1;
 
                        // R
-                       soundData[2] = (byte)(3 * RLoudness);
+                       soundData[2] = (byte)(3 * BottomLoudness);
                        soundData[3] = (byte)1;
                        break;
                    }
@@ -429,11 +419,11 @@ public class MainActivity extends AppCompatActivity {
 
                    if (categoryLabels.contains(alertCategories.get(i).toLowerCase())) {
                        // L
-                       soundData[0] = (byte)(2 * LLoudness);
+                       soundData[0] = (byte)(2 * TopLoudness);
                        soundData[1] = (byte)1;
 
                        // R
-                       soundData[2] = (byte)(2 * RLoudness);
+                       soundData[2] = (byte)(2 * BottomLoudness);
                        soundData[3] = (byte)1;
                        break;
                    }
@@ -447,18 +437,18 @@ public class MainActivity extends AppCompatActivity {
 
                    if (categoryLabels.contains(gtkCategories.get(i).toLowerCase())) {
                        // L
-                       soundData[0] = (byte)(1 * LLoudness);
+                       soundData[0] = (byte)(1 * TopLoudness);
                        soundData[1] = (byte)0;
 
                        // R
-                       soundData[2] = (byte)(1 * RLoudness);
+                       soundData[2] = (byte)(1 * BottomLoudness);
                        soundData[3] = (byte)0;
                        break;
                    }
                }
 
-               LLoudness = 0;
-               RLoudness = 0;
+               TopLoudness = 0;
+               BottomLoudness = 0;
 
                if (soundData[0] == 9) {
                    return;
@@ -471,19 +461,17 @@ public class MainActivity extends AppCompatActivity {
                            OutputStream writer = socket.getOutputStream();
                            writer.write(soundData);
                            writer.flush();
-                           receiveAudioData = true;
                        } catch(Exception e) { Log.e("sic", "exception", e);}
                    }
                };
 
                try {
-                   receiveAudioData = false;
                    sendThread.start();
                } catch (Exception e) {
                    Log.e("sic", "exception", e);
                }
 
-           }
+            }
         }
     }
 
