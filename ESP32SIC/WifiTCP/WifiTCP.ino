@@ -31,16 +31,16 @@ void IRAM_ATTR getMicSamples() {
   int adcVal7 = adc1_get_raw(ADC1_CHANNEL_7); // reads the ADC
   int adcVal6 = adc1_get_raw(ADC1_CHANNEL_6); // reads the ADC
 
-  uint16_t value7 = map(adcVal7, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
-  audioBuffer[bufferPointer] = value7 & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
-  bufferPointer++;
-  audioBuffer[bufferPointer] = (value7 >> 8); 
-  bufferPointer++;
-
   uint16_t value6 = map(adcVal6, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
   audioBuffer[bufferPointer] = value6 & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
   bufferPointer++;
   audioBuffer[bufferPointer] = (value6 >> 8); 
+  bufferPointer++;
+  
+  uint16_t value7 = map(adcVal7, 0 , 4096, 0, 65535);  // converts the value to 0..65535 (16bit)
+  audioBuffer[bufferPointer] = value7 & 0xff; // because we can only transmit byte arrays via TCP, we need to split the 16 bit number into 2 bytes
+  bufferPointer++;
+  audioBuffer[bufferPointer] = (value7 >> 8); 
   bufferPointer++;
  
   if (bufferPointer == AUDIO_BUFFER_MAX) { // when the buffer is full
@@ -168,12 +168,16 @@ void loop() {
     digitalWrite(17, LOW);
 
     // L
-    digitalWrite(16, HIGH);
-    tone(16, exp(buzzerData[0] * 2) + 30);
-
+    if (buzzerData[0] != 0) {
+      digitalWrite(16, HIGH);
+      tone(16, exp(buzzerData[0] * 2) + 30);
+    }
+    
     //R
-    digitalWrite(17, HIGH);
-    tone(17, exp(buzzerData[2] * 2) + 30);
+    if (buzzerData[2] != 0) {
+      digitalWrite(17, HIGH);
+      tone(17, exp(buzzerData[2] * 2) + 30);
+    }
 
     // Determine if buzzing shld be continuous
     if (buzzerData[1] == 0 && buzzerData[3] == 0) {
