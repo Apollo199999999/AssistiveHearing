@@ -114,9 +114,10 @@ public class MainActivity extends AppCompatActivity {
     // Timer to get recording samples
     public Timer recordTimer = new Timer();
 
-    int TopLoudness = 0;
-    int BottomLoudness = 0;
-
+    // Allow the user to change whether the L and R channels of an AudioRecord
+    // correspond to the bottom and top mics respectively, instead of the typical L and R
+    // corresponding to the top and bottom mics respectively
+    boolean inversedMicrophone = false;
 
     // Create placeholder for user's consent to record_audio permission.
     // This will be used in handling callback
@@ -351,34 +352,66 @@ public class MainActivity extends AppCompatActivity {
             int readLen = recorder.read(newData, 0, newData.length, 1);
 
             // Calc the volume of each of the 2 streams
-            float[] LStream = new float[newData.length / 2];
-            float[] RStream = new float[newData.length / 2];
+            float[] LChannelStream = new float[newData.length / 2];
+            float[] RChannelStream = new float[newData.length / 2];
             for (int i = 0; i < readLen / 2; i += 2) {
-                LStream[i / 2] = newData[i];
-                RStream[i / 2] = newData[i + 1];
+                LChannelStream[i / 2] = newData[i];
+                RChannelStream[i / 2] = newData[i + 1];
             }
 
-            double LLoudness = 0.0;
-            for (int i = 0; i < LStream.length; i++) {
-                LLoudness += Math.abs(LStream[i]);
+            double LChannelLoudness = 0.0;
+            for (int i = 0; i < LChannelStream.length; i++) {
+                LChannelLoudness += Math.abs(LChannelStream[i]);
             }
-            LLoudness = LLoudness / LStream.length;
+            LChannelLoudness = LChannelLoudness / LChannelStream.length;
 
-            double RLoudness = 0.0;
-            for (int i = 0; i < RStream.length; i++) {
-                RLoudness += Math.abs(RStream[i]);
+            double RChannelLoudness = 0.0;
+            for (int i = 0; i < RChannelStream.length; i++) {
+                RChannelLoudness += Math.abs(RChannelStream[i]);
             }
-            RLoudness = RLoudness / RStream.length;
+            RChannelLoudness = RChannelLoudness / RChannelStream.length;
 
-            if (RLoudness > LLoudness) {
-                TextView text = findViewById(R.id.SourceText);
-                text.setText("Bottom");
-                BottomLoudness = 1;
-            } else if (RLoudness < LLoudness) {
-                TextView text = findViewById(R.id.SourceText);
-                text.setText("Top");
-                TopLoudness = 1;
-            } else {
+            // On most phones, the Left Channel corresponds to the top microphone,
+            // while the Right Channel corresponds to the bottom microphone.
+            // However, this is not guaranteed, which is why we provide users with an option
+            // of inversing this, via the boolean inversedMicrophones (false by default)
+            if (inversedMicrophone == false) {
+                // Boost the top mic, because it is usually weaker
+                LChannelLoudness *= 1.1;
+            }
+            else if (inversedMicrophone == true) {
+                // Boost the top mic, because it is usually weaker
+                RChannelLoudness *= 1.1;
+            }
+
+            int TopLoudness = 0;
+            int BottomLoudness = 0;
+
+            TextView sourceText = findViewById(R.id.SourceText);
+            if (RChannelLoudness > LChannelLoudness) {
+                if (inversedMicrophone == false) {
+                    // Bottom mic is louder
+                    sourceText.setText("Bottom");
+                    BottomLoudness = 1;
+                }
+                else if (inversedMicrophone == true) {
+                    // Top mic is louder
+                    sourceText.setText("Top");
+                    TopLoudness = 1;
+                }
+            } else if (RChannelLoudness < LChannelLoudness) {
+                if (inversedMicrophone == false) {
+                    // Top mic is louder
+                    sourceText.setText("Top");
+                    TopLoudness = 1;
+                }
+                else if (inversedMicrophone == true) {
+                    // Bottom mic is louder
+                    sourceText.setText("Bottom");
+                    BottomLoudness = 1;
+                }
+            } else if (RChannelLoudness == LChannelLoudness) {
+                // Ring both buzzers
                 BottomLoudness = 1;
                 TopLoudness = 1;
             }
