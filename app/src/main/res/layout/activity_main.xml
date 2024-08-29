@@ -7,25 +7,7 @@
     tools:context=".MainActivity">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        tools:ignore="MissingConstraints">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="45sp"
-            android:layout_marginTop="30sp"
-        ></TextView>
-
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="211dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:gravity="center_horizontal"
@@ -34,6 +16,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="30sp"
+            android:text="@string/app_name"
+            android:textSize="45sp"/>
 
         <TextView
             android:id="@+id/SourceText"
@@ -56,12 +45,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/ConnectBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Connect to ESP32" />
 
         <TextView
             android:id="@+id/TCPText"

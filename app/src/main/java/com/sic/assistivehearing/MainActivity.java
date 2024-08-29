@@ -1,8 +1,15 @@
 package com.sic.assistivehearing;
 
 import android.annotation.SuppressLint;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -20,6 +27,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.audio.TensorAudio;
@@ -41,6 +52,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.net.ServerSocket;
@@ -101,9 +113,6 @@ public class MainActivity extends AppCompatActivity {
 
     // Timer to get recording samples
     public Timer recordTimer = new Timer();
-
-    // Networking crap
-    Socket socket;
 
     int TopLoudness = 0;
     int BottomLoudness = 0;
@@ -186,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
                     AudioFormat.CHANNEL_IN_STEREO,
                     AudioFormat.ENCODING_PCM_FLOAT);
             int bufferSizeMultiplier = 2;
-            int modelRequiredBufferSize = (int)classifier.getRequiredInputBufferSize() * DataType.FLOAT32.byteSize() * bufferSizeMultiplier;
+            int modelRequiredBufferSize = (int) classifier.getRequiredInputBufferSize() * DataType.FLOAT32.byteSize() * bufferSizeMultiplier;
             if (bufferSizeInBytes < modelRequiredBufferSize) {
                 bufferSizeInBytes = modelRequiredBufferSize;
             }
@@ -221,6 +230,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    UsbManager usbManager;
+    UsbDeviceConnection esp32Connection;
+    UsbSerialPort esp32Port;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -230,48 +242,73 @@ public class MainActivity extends AppCompatActivity {
         // Initialization
         requestAudioPermissions();
 
-        // Event handlers
-        Button connectBtn = (Button) findViewById(R.id.ConnectBtn);
-        connectBtn.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                onConnectBtnClick(v);
-            }
-        });
+        // Communicate with ESP32 using USB
+        usbManager = (UsbManager) getApplicationContext().getSystemService(Context.USB_SERVICE);
+        ConnectESP32();
 
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.EXTRA_PERMISSION_GRANTED);
+        registerReceiver(mUsbReceiver, filter);
 
     }
 
+    BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED == action) {
+                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
-    private void onConnectBtnClick(View v) {
-        TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
-
-        Thread TCPThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    socket = new Socket("192.168.4.1", 50000);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TCPconnect.setTextColor(0xFFFFFFFF);
-                            TCPconnect.setText("Connected!");
-                        }
-                    });
-                } catch (Exception e) {
-                    Log.e("sic", "exception", e);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TCPconnect.setTextColor(0xFFFFFFFF);
-                            TCPconnect.setText("Connection Failed.");
-                        }
-                    });
+                if (device != null) {
+                    ConnectESP32();
                 }
+
             }
-        };
+            else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
+                        TCPconnect.setTextColor(0xFFFF0000);
+                        TCPconnect.setText("Disconnected.");
+                    }
+                });
+            }
+        }
+    };
 
-        TCPThread.start();
+    public void ConnectESP32() {
+        try {
+            List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+            UsbSerialDriver driver = availableDrivers.get(0);
+            esp32Connection = usbManager.openDevice(driver.getDevice());
+            esp32Port = driver.getPorts().get(0);
 
+            esp32Port.open(esp32Connection);
+            esp32Port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
+                    TCPconnect.setTextColor(0xFFFFFFFF);
+                    TCPconnect.setText("Connected!");
+                }
+            });
+
+        } catch (Exception ex) {
+            Toast.makeText(getApplicationContext(), "Unable to connect to ESP32. Check that USB permissions have been granted.", Toast.LENGTH_LONG).show();
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
+                    TCPconnect.setTextColor(0xFFFF0000);
+                    TCPconnect.setText("Connection Failed.");
+                }
+            });
+        }
     }
 
     public void StopInference() {
@@ -283,6 +320,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         StopInference();
+        try {
+            esp32Port.close();
+            esp32Connection.close();
+        } catch (Exception ex) {
+            Log.e("SIC", "Exception", ex);
+        }
+
         super.onDestroy();
     }
 
@@ -314,13 +358,13 @@ public class MainActivity extends AppCompatActivity {
                 RStream[i / 2] = newData[i + 1];
             }
 
-            double LLoudness  = 0.0;
+            double LLoudness = 0.0;
             for (int i = 0; i < LStream.length; i++) {
                 LLoudness += Math.abs(LStream[i]);
             }
             LLoudness = LLoudness / LStream.length;
 
-            double RLoudness  = 0.0;
+            double RLoudness = 0.0;
             for (int i = 0; i < RStream.length; i++) {
                 RLoudness += Math.abs(RStream[i]);
             }
@@ -330,13 +374,11 @@ public class MainActivity extends AppCompatActivity {
                 TextView text = findViewById(R.id.SourceText);
                 text.setText("Bottom");
                 BottomLoudness = 1;
-            }
-            else if (RLoudness < LLoudness){
+            } else if (RLoudness < LLoudness) {
                 TextView text = findViewById(R.id.SourceText);
                 text.setText("Top");
                 TopLoudness = 1;
-            }
-            else {
+            } else {
                 BottomLoudness = 1;
                 TopLoudness = 1;
             }
@@ -384,92 +426,92 @@ public class MainActivity extends AppCompatActivity {
                 TextView textView = (TextView) findViewById(R.id.ClassText);
                 textView.setText("ML model class: " + text);
 
-               // 2 elements for L buzzer, 2 elements for R buzzer
-               // First element stores "intensity" (1-3)
-               // Second element stores continuous (1)/intermittent(0)
-               byte[] soundData = new byte[4];
-               soundData[0] = 9;
-               soundData[1] = 9;
-               soundData[2] = 9;
-               soundData[3] = 9;
+                // 2 elements for L buzzer, 2 elements for R buzzer
+                // First element stores "intensity" (1-3)
+                // Second element stores continuous (1)/intermittent(0)
+                byte[] soundData = new byte[4];
+                soundData[0] = 9;
+                soundData[1] = 9;
+                soundData[2] = 9;
+                soundData[3] = 9;
 
-               for (int i = 0; i < dangerCategories.size(); i++) {
-                   // soundData alr filled
-                   if (soundData[0] != 9) {
-                       break;
-                   }
+                for (int i = 0; i < dangerCategories.size(); i++) {
+                    // soundData alr filled
+                    if (soundData[0] != 9) {
+                        break;
+                    }
 
-                   if (categoryLabels.contains(dangerCategories.get(i).toLowerCase())) {
-                       // L
-                       soundData[0] = (byte)(3 * TopLoudness);
-                       soundData[1] = (byte)1;
+                    if (categoryLabels.contains(dangerCategories.get(i).toLowerCase())) {
+                        // L
+                        soundData[0] = (byte) (3 * TopLoudness);
+                        soundData[1] = (byte) 1;
 
-                       // R
-                       soundData[2] = (byte)(3 * BottomLoudness);
-                       soundData[3] = (byte)1;
-                       break;
-                   }
-               }
+                        // R
+                        soundData[2] = (byte) (3 * BottomLoudness);
+                        soundData[3] = (byte) 1;
+                        break;
+                    }
+                }
 
-               for (int i = 0; i < alertCategories.size(); i++) {
-                   // soundData alr filled
-                   if (soundData[0] != 9) {
-                       break;
-                   }
+                for (int i = 0; i < alertCategories.size(); i++) {
+                    // soundData alr filled
+                    if (soundData[0] != 9) {
+                        break;
+                    }
 
-                   if (categoryLabels.contains(alertCategories.get(i).toLowerCase())) {
-                       // L
-                       soundData[0] = (byte)(2 * TopLoudness);
-                       soundData[1] = (byte)1;
+                    if (categoryLabels.contains(alertCategories.get(i).toLowerCase())) {
+                        // L
+                        soundData[0] = (byte) (2 * TopLoudness);
+                        soundData[1] = (byte) 1;
 
-                       // R
-                       soundData[2] = (byte)(2 * BottomLoudness);
-                       soundData[3] = (byte)1;
-                       break;
-                   }
-               }
+                        // R
+                        soundData[2] = (byte) (2 * BottomLoudness);
+                        soundData[3] = (byte) 1;
+                        break;
+                    }
+                }
 
-               for (int i = 0; i < gtkCategories.size(); i++) {
-                   // soundData alr filled
-                   if (soundData[0] != 9) {
-                       break;
-                   }
+                for (int i = 0; i < gtkCategories.size(); i++) {
+                    // soundData alr filled
+                    if (soundData[0] != 9) {
+                        break;
+                    }
 
-                   if (categoryLabels.contains(gtkCategories.get(i).toLowerCase())) {
-                       // L
-                       soundData[0] = (byte)(1 * TopLoudness);
-                       soundData[1] = (byte)0;
+                    if (categoryLabels.contains(gtkCategories.get(i).toLowerCase())) {
+                        // L
+                        soundData[0] = (byte) (1 * TopLoudness);
+                        soundData[1] = (byte) 0;
 
-                       // R
-                       soundData[2] = (byte)(1 * BottomLoudness);
-                       soundData[3] = (byte)0;
-                       break;
-                   }
-               }
+                        // R
+                        soundData[2] = (byte) (1 * BottomLoudness);
+                        soundData[3] = (byte) 0;
+                        break;
+                    }
+                }
 
-               TopLoudness = 0;
-               BottomLoudness = 0;
+                TopLoudness = 0;
+                BottomLoudness = 0;
 
-               if (soundData[0] == 9) {
-                   return;
-               }
+                if (soundData[0] == 9) {
+                    return;
+                }
 
-               Thread sendThread = new Thread() {
-                   @Override
-                   public void run() {
-                       try {
-                           OutputStream writer = socket.getOutputStream();
-                           writer.write(soundData);
-                           writer.flush();
-                       } catch(Exception e) { Log.e("sic", "exception", e);}
-                   }
-               };
+                Thread sendThread = new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            esp32Port.write(soundData, 0);
+                        } catch (Exception e) {
+                            Log.e("SIC", "Exception", e);
+                        }
+                    }
+                };
 
-               try {
-                   sendThread.start();
-               } catch (Exception e) {
-                   Log.e("sic", "exception", e);
-               }
+                try {
+                    sendThread.start();
+                } catch (Exception e) {
+                    Log.e("SIC", "Exception", e);
+                }
 
             }
         }
