@@ -1,29 +1,28 @@
 package com.sic.assistivehearing;
 
 import android.annotation.SuppressLint;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioRecord;
-import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -38,24 +37,12 @@ import org.tensorflow.lite.support.label.Category;
 import org.tensorflow.lite.task.audio.classifier.AudioClassifier;
 import org.tensorflow.lite.task.audio.classifier.Classifications;
 import org.tensorflow.lite.task.core.BaseOptions;
-import org.w3c.dom.Text;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.Console;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.net.ServerSocket;
 
 @SuppressWarnings("all")
 public class MainActivity extends AppCompatActivity {
@@ -253,26 +240,49 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(UsbManager.EXTRA_PERMISSION_GRANTED);
         registerReceiver(mUsbReceiver, filter);
 
+        Button howToBtn = findViewById(R.id.HowToBtn);
+        howToBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Use the Builder class for convenient dialog construction.
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+                builder.setTitle("How to use AssistiveHearing");
+                builder.setMessage("1. Plug your phone into the USB-C cable located in the belt.\n" +
+                        "2. If a dialog shows up asking you for permission to access the USB device, please enable access.\n" +
+                        "3. If everything works correctly, you should now see that the buzzer connection status now reports as \"Connected\".");
+                builder.setPositiveButton("I understand", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                    }
+                });
+                AlertDialog dialog = builder.show();
+
+                // Manually set font
+                TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+                Typeface face = Typeface.createFromAsset(getAssets(), "font/poppins_regular.ttf");
+                textView.setTypeface(face);
+            }
+        });
+
     }
 
     BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (UsbManager.ACTION_USB_DEVICE_ATTACHED == action) {
-                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
                 if (device != null) {
                     ConnectESP32();
                 }
 
-            }
-            else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
+            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
+                        TextView TCPconnect = (TextView) findViewById(R.id.ConnectionText);
                         TCPconnect.setTextColor(0xFFFF0000);
-                        TCPconnect.setText("Disconnected.");
+                        TCPconnect.setText("Disconnected");
                     }
                 });
             }
@@ -292,21 +302,21 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
-                    TCPconnect.setTextColor(0xFFFFFFFF);
-                    TCPconnect.setText("Connected!");
+                    TextView TCPconnect = (TextView) findViewById(R.id.ConnectionText);
+                    TCPconnect.setTextColor(0xFF00FF00);
+                    TCPconnect.setText("Connected");
                 }
             });
 
         } catch (Exception ex) {
-            Toast.makeText(getApplicationContext(), "Unable to connect to ESP32. Check that USB permissions have been granted.", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "Unable to connect to buzzers. Check that the device is plugged in.", Toast.LENGTH_LONG).show();
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    TextView TCPconnect = (TextView) findViewById(R.id.TCPText);
+                    TextView TCPconnect = (TextView) findViewById(R.id.ConnectionText);
                     TCPconnect.setTextColor(0xFFFF0000);
-                    TCPconnect.setText("Connection Failed.");
+                    TCPconnect.setText("Disconnected");
                 }
             });
         }
@@ -378,8 +388,7 @@ public class MainActivity extends AppCompatActivity {
             if (inversedMicrophone == false) {
                 // Boost the top mic, because it is usually weaker
                 LChannelLoudness *= 1.1;
-            }
-            else if (inversedMicrophone == true) {
+            } else if (inversedMicrophone == true) {
                 // Boost the top mic, because it is usually weaker
                 RChannelLoudness *= 1.1;
             }
@@ -393,8 +402,7 @@ public class MainActivity extends AppCompatActivity {
                     // Bottom mic is louder
                     sourceText.setText("Bottom");
                     BottomLoudness = 1;
-                }
-                else if (inversedMicrophone == true) {
+                } else if (inversedMicrophone == true) {
                     // Top mic is louder
                     sourceText.setText("Top");
                     TopLoudness = 1;
@@ -404,14 +412,14 @@ public class MainActivity extends AppCompatActivity {
                     // Top mic is louder
                     sourceText.setText("Top");
                     TopLoudness = 1;
-                }
-                else if (inversedMicrophone == true) {
+                } else if (inversedMicrophone == true) {
                     // Bottom mic is louder
                     sourceText.setText("Bottom");
                     BottomLoudness = 1;
                 }
             } else if (RChannelLoudness == LChannelLoudness) {
                 // Ring both buzzers
+                sourceText.setText("Both");
                 BottomLoudness = 1;
                 TopLoudness = 1;
             }
@@ -455,9 +463,10 @@ public class MainActivity extends AppCompatActivity {
                     categories.remove(maxIndex);
                 }
 
-
+                // Remove the last \n
+                text = text.substring(0, text.length() - 1);
                 TextView textView = (TextView) findViewById(R.id.ClassText);
-                textView.setText("ML model class: " + text);
+                textView.setText(text);
 
                 // 2 elements for L buzzer, 2 elements for R buzzer
                 // First element stores "intensity" (1-3)
@@ -535,6 +544,7 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             esp32Port.write(soundData, 0);
                         } catch (Exception e) {
+                            sourceText.setText("None");
                             Log.e("SIC", "Exception", e);
                         }
                     }
@@ -543,6 +553,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     sendThread.start();
                 } catch (Exception e) {
+                    sourceText.setText("None");
                     Log.e("SIC", "Exception", e);
                 }
 
