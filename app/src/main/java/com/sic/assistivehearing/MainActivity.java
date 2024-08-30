@@ -309,8 +309,6 @@ public class MainActivity extends AppCompatActivity {
             });
 
         } catch (Exception ex) {
-            Toast.makeText(getApplicationContext(), "Unable to connect to buzzers. Check that the device is plugged in.", Toast.LENGTH_LONG).show();
-
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -387,10 +385,10 @@ public class MainActivity extends AppCompatActivity {
             // of inversing this, via the boolean inversedMicrophones (false by default)
             if (inversedMicrophone == false) {
                 // Boost the top mic, because it is usually weaker
-                LChannelLoudness *= 1.1;
+                LChannelLoudness *= 1.075;
             } else if (inversedMicrophone == true) {
                 // Boost the top mic, because it is usually weaker
-                RChannelLoudness *= 1.1;
+                RChannelLoudness *= 1.075;
             }
 
             int TopLoudness = 0;
@@ -535,6 +533,7 @@ public class MainActivity extends AppCompatActivity {
                 BottomLoudness = 0;
 
                 if (soundData[0] == 9) {
+                    sourceText.setText("None");
                     return;
                 }
 
