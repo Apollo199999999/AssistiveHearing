@@ -25,6 +25,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import android.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -62,37 +63,39 @@ public class MainActivity extends AppCompatActivity {
                     "shatter",
             });
 
-    public List<String> alertCategories = Arrays.asList(new String[]{
-            "thump",
-            "thunder",
-            "shout",
-            "bellow",
-            "whoop",
-            "yell",
-            "screaming",
-            "bark",
-            "yip",
-            "bow-wow",
-            "hiss",
-            "roar",
-            "car",
-            "bus",
-            "emergency vehicle",
-            "police car (siren)",
-            "ambulance (siren)",
-            "fire engine, fire truck (siren)",
-            "doorbell",
-            "bang",
-            "slap, smack",
-            "breaking",
-            "whip",
-            "crushing"
-    });
+    public List<String> alertCategories = Arrays.asList(new String[]
+            {
+                    "thump",
+                    "thunder",
+                    "shout",
+                    "bellow",
+                    "whoop",
+                    "yell",
+                    "screaming",
+                    "bark",
+                    "yip",
+                    "bow-wow",
+                    "hiss",
+                    "roar",
+                    "car",
+                    "bus",
+                    "emergency vehicle",
+                    "police car (siren)",
+                    "ambulance (siren)",
+                    "fire engine, fire truck (siren)",
+                    "doorbell",
+                    "bang",
+                    "slap, smack",
+                    "breaking",
+                    "whip",
+                    "crushing"
+            });
 
-    public List<String> gtkCategories = Arrays.asList(new String[]{
-            "speech",
-            "sneeze",
-    });
+    public List<String> gtkCategories = Arrays.asList(new String[]
+            {
+                    "speech",
+                    "sneeze",
+            });
 
     // Global AudioClassifer variables
     AudioClassifier classifier;
