@@ -64,6 +64,9 @@ void loop() {
     if (buzzerData[0] != 0) {
       digitalWrite(16, HIGH);
       tone(16, exp(buzzerData[0] * 2) + 30);
+    }
+    // Ring second buzzer only for higher intensities
+    if (buzzerData[0] > 1) {
       digitalWrite(17, HIGH);
       tone(17, exp(buzzerData[0] * 2) + 30);
     }
@@ -72,6 +75,9 @@ void loop() {
     if (buzzerData[2] != 0) {
       digitalWrite(32, HIGH);
       tone(32, exp(buzzerData[2] * 2) + 30);
+    }
+    // Ring second buzzer only for higher intensities
+    if (buzzerData[2] > 1) {
       digitalWrite(33, HIGH);
       tone(33, exp(buzzerData[2] * 2) + 30);
     }
@@ -102,5 +108,5 @@ void loop() {
 
     secondTimer.STOP;
   }  
-}
+}  
 
