@@ -10,14 +10,28 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="How to use"
+        android:text="About"
         android:textSize="28sp"
         android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/ic_launcher" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="1. Plug your phone into the USB-C cable located in the belt.\n2. If a dialog shows up asking you for permission to access the USB device, please enable access.\n3. If everything works correctly, you should see that the buzzer connection status now reports as &quot;Connected&quot;."
+        android:layout_gravity="center"
+        android:text="AssistiveHearing version 1.0"
+        android:textSize="16sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Icons by icons8.com"
         android:textSize="16sp" />
 
     <LinearLayout
@@ -27,12 +41,12 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/btn_understand"
-            android:layout_width="150dp"
+            android:id="@+id/btn_about_close"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:clickable="true"
-            android:text="I understand" />
+            android:text="Close" />
     </LinearLayout>
 
 </LinearLayout>

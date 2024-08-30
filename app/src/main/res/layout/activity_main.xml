@@ -163,6 +163,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Settings"
+                android:textFontWeight="500" />
+
+            <Button
+                android:id="@+id/AboutBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="About"
                 android:textFontWeight="500"
                 android:layout_marginBottom="20dp"/>
         </LinearLayout>

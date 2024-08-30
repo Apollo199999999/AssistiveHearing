@@ -250,6 +250,7 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(UsbManager.EXTRA_PERMISSION_GRANTED);
         registerReceiver(mUsbReceiver, filter);
 
+        // Handlers for buttons
         Button howToBtn = findViewById(R.id.HowToBtn);
         howToBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -278,6 +279,17 @@ public class MainActivity extends AppCompatActivity {
                         inversedMicrophone = settings.getBoolean("inversedMicrophone", false);
                     }
                 });
+            }
+        });
+
+        Button aboutBtn = findViewById(R.id.AboutBtn);
+        aboutBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AboutDialog aboutDialog = new AboutDialog(MainActivity.this);
+                aboutDialog.show();
+                int width = (int)(getResources().getDisplayMetrics().widthPixels * 0.95);
+                aboutDialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
             }
         });
 
