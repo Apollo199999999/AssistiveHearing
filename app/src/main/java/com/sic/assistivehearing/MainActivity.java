@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.renderscript.Sampler;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -279,6 +280,9 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 SettingsDialog settingsDialog = new SettingsDialog(MainActivity.this);
                 settingsDialog.show();
+                int width = (int)(getResources().getDisplayMetrics().widthPixels * 0.90);
+                settingsDialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+
                 settingsDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                     @Override
                     public void onDismiss(DialogInterface dialogInterface) {
