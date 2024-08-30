@@ -420,21 +420,21 @@ public class MainActivity extends AppCompatActivity {
             if (RChannelLoudness > LChannelLoudness) {
                 if (inversedMicrophone == false) {
                     // Bottom mic is louder
-                    sourceText.setText("Bottom");
+                    sourceText.setText("Back");
                     BottomLoudness = 1;
                 } else if (inversedMicrophone == true) {
                     // Top mic is louder
-                    sourceText.setText("Top");
+                    sourceText.setText("Front");
                     TopLoudness = 1;
                 }
             } else if (RChannelLoudness < LChannelLoudness) {
                 if (inversedMicrophone == false) {
                     // Top mic is louder
-                    sourceText.setText("Top");
+                    sourceText.setText("Front");
                     TopLoudness = 1;
                 } else if (inversedMicrophone == true) {
                     // Bottom mic is louder
-                    sourceText.setText("Bottom");
+                    sourceText.setText("Back");
                     BottomLoudness = 1;
                 }
             } else if (RChannelLoudness == LChannelLoudness) {
