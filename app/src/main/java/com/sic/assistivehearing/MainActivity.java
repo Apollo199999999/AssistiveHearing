@@ -254,23 +254,10 @@ public class MainActivity extends AppCompatActivity {
         howToBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Use the Builder class for convenient dialog construction.
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-                builder.setTitle("How to use AssistiveHearing");
-                builder.setMessage("1. Plug your phone into the USB-C cable located in the belt.\n" +
-                        "2. If a dialog shows up asking you for permission to access the USB device, please enable access.\n" +
-                        "3. If everything works correctly, you should now see that the buzzer connection status now reports as \"Connected\".");
-                builder.setPositiveButton("I understand", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                    }
-                });
-                AlertDialog dialog = builder.show();
-
-                // Manually set font
-                TextView textView = (TextView) dialog.findViewById(android.R.id.message);
-                Typeface face = Typeface.createFromAsset(getAssets(), "font/poppins_regular.ttf");
-                textView.setTypeface(face);
+                HowToDialog howToDialog = new HowToDialog(MainActivity.this);
+                howToDialog.show();
+                int width = (int)(getResources().getDisplayMetrics().widthPixels * 0.95);
+                howToDialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
             }
         });
 
@@ -280,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 SettingsDialog settingsDialog = new SettingsDialog(MainActivity.this);
                 settingsDialog.show();
-                int width = (int)(getResources().getDisplayMetrics().widthPixels * 0.90);
+                int width = (int)(getResources().getDisplayMetrics().widthPixels * 0.95);
                 settingsDialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
 
                 settingsDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {

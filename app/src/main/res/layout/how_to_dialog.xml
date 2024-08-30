@@ -10,23 +10,15 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Settings"
+        android:text="How to use"
         android:textSize="28sp"
         android:textStyle="bold" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:text="If you notice that the buzzers are consistently buzzing in the wrong direction, you can try inverting which microphones are mapped to which buzzers using the toggle below." />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/invertSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:checked="false"
-        android:textSize="16sp"
-        android:text="Invert microphones" />
+        android:text="1. Plug your phone into the USB-C cable located in the belt.\n2. If a dialog shows up asking you for permission to access the USB device, please enable access.\n3. If everything works correctly, you should see that the buzzer connection status now reports as &quot;Connected&quot;."
+        android:textSize="16sp" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -35,11 +27,11 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/btn_yes"
+            android:id="@+id/btn_understand"
             android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:clickable="true"
-            android:text="Save settings" />
+            android:text="I understand" />
     </LinearLayout>
 
 </LinearLayout>
