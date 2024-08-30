@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.hardware.usb.UsbDevice;
@@ -16,6 +17,7 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Bundle;
+import android.renderscript.Sampler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -227,6 +229,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Set inversedMicrophone from SharedPreferences
+        SharedPreferences settings = getSharedPreferences("UserSettings", 0);
+        inversedMicrophone = settings.getBoolean("inversedMicrophone", false);
+
         // Initialization
         requestAudioPermissions();
 
@@ -261,6 +267,23 @@ public class MainActivity extends AppCompatActivity {
                 TextView textView = (TextView) dialog.findViewById(android.R.id.message);
                 Typeface face = Typeface.createFromAsset(getAssets(), "font/poppins_regular.ttf");
                 textView.setTypeface(face);
+            }
+        });
+
+        Button settingsBtn = findViewById(R.id.SettingsBtn);
+        settingsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SettingsDialog settingsDialog = new SettingsDialog(MainActivity.this);
+                settingsDialog.show();
+                settingsDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        // Set inversedMicrophone from SharedPreferences
+                        SharedPreferences settings = getSharedPreferences("UserSettings", 0);
+                        inversedMicrophone = settings.getBoolean("inversedMicrophone", false);
+                    }
+                });
             }
         });
 
@@ -385,10 +408,10 @@ public class MainActivity extends AppCompatActivity {
             // of inversing this, via the boolean inversedMicrophones (false by default)
             if (inversedMicrophone == false) {
                 // Boost the top mic, because it is usually weaker
-                LChannelLoudness *= 1.075;
+                LChannelLoudness *= 1.1;
             } else if (inversedMicrophone == true) {
                 // Boost the top mic, because it is usually weaker
-                RChannelLoudness *= 1.075;
+                RChannelLoudness *= 1.1;
             }
 
             int TopLoudness = 0;
