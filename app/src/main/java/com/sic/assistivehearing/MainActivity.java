@@ -412,13 +412,6 @@ public class MainActivity extends AppCompatActivity {
             // while the Right Channel corresponds to the bottom microphone.
             // However, this is not guaranteed, which is why we provide users with an option
             // of inversing this, via the boolean inversedMicrophones (false by default)
-            if (inversedMicrophone == false) {
-                // Boost the top mic, because it is usually weaker
-                LChannelLoudness *= 1.1;
-            } else if (inversedMicrophone == true) {
-                // Boost the top mic, because it is usually weaker
-                RChannelLoudness *= 1.1;
-            }
 
             int TopLoudness = 0;
             int BottomLoudness = 0;
