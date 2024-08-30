@@ -2,7 +2,7 @@
 #include <BlockNot.h>   
 
 // timer
-BlockNot secondTimer(350);
+BlockNot secondTimer(400);
 
 void setup() {
   // Configure the buzzers
