@@ -7,10 +7,15 @@ void setup() {
   // L (front)
   pinMode(16, OUTPUT);
   pinMode(17, OUTPUT);
+  digitalWrite(16, HIGH);
+  digitalWrite(17, HIGH);
 
   // R (back)
   pinMode(32, OUTPUT);
   pinMode(33, OUTPUT);
+  digitalWrite(32, HIGH);
+  digitalWrite(33, HIGH);
+
   
   Serial.begin(115200);
 }
@@ -41,30 +46,22 @@ void loop() {
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
     // L
     noTone(16);
-    digitalWrite(16, LOW);
     noTone(17);
-    digitalWrite(17, LOW);
 
     // R
     noTone(32);
-    digitalWrite(32, LOW);
     noTone(33);
-    digitalWrite(33, LOW);
 
     // L
     if (buzzerData[0] != 4) {
-      digitalWrite(16, HIGH);
-      tone(16, exp(buzzerData[0] * 2) + 30, 600);
-      digitalWrite(17, HIGH);
-      tone(17, exp(buzzerData[0] * 2) + 30, 600);
+      tone(16, exp(buzzerData[0] * 2) + 30, 700);
+      tone(17, exp(buzzerData[0] * 2) + 30, 700);
     }
    
     // R
     if (buzzerData[2] != 4) {
-      digitalWrite(32, HIGH);
-      tone(32, exp(buzzerData[2] * 2) + 30, 600);
-      digitalWrite(33, HIGH);
-      tone(33, exp(buzzerData[2] * 2) + 30, 600);
+      tone(32, exp(buzzerData[2] * 2) + 30, 700);
+      tone(33, exp(buzzerData[2] * 2) + 30, 700);
     }
   }
 
