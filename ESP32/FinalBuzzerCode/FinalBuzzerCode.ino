@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <BlockNot.h>   
 
-BlockNot buzzerTimer(700);
+BlockNot buzzerTimer(400);
 
 void setup() {
   // Configure the buzzers
