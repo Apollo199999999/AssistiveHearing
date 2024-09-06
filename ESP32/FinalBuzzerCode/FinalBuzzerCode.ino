@@ -57,19 +57,27 @@ void loop() {
     if (buzzerData[0] != 4) {
       digitalWrite(16, HIGH);
       tone(16, exp(buzzerData[0] * 2) + 30);
-      digitalWrite(17, HIGH);
-      tone(17, exp(buzzerData[0] * 2) + 30);
+
+      if (buzzerData[0] > 1) {
+        digitalWrite(17, HIGH);
+        tone(17, exp(buzzerData[0] * 2) + 30);
+      }
     }
    
     // R
     if (buzzerData[2] != 4) {
       digitalWrite(32, HIGH);
       tone(32, exp(buzzerData[2] * 2) + 30);
-      digitalWrite(33, HIGH);
-      tone(33, exp(buzzerData[2] * 2) + 30);
+
+      if (buzzerData[2] > 1) {
+        digitalWrite(33, HIGH);
+        tone(33, exp(buzzerData[2] * 2) + 30);
+      }
     }
 
-    buzzerTimer.RESET;
+    if (buzzerData[1] == 0 && buzzerData[3] == 0) {
+      buzzerTimer.RESET;
+    }
   }
 
   if (buzzerTimer.FIRST_TRIGGER) {  
