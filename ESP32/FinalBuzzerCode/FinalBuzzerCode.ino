@@ -14,11 +14,11 @@ void setup() {
   Serial.begin(115200);
 }
 
-void loop() {
-  // To store buzzer commands sent via TCP from the Android app
-  int buzzerData[4] = {9,9,9,9};
+// To store buzzer commands sent via TCP from the Android app
+int buzzerData[4] = {9,9,9,9};
+int i = 0;
 
-  int i = 0;
+void loop() {
   while (Serial.available()) {
     // Read one character from the serial buffer sent by the client
     char serialChar = Serial.read(); 
@@ -73,6 +73,11 @@ void loop() {
     }
 
     if (buzzerData[1] == 0 && buzzerData[3] == 0) {
+        buzzerData[0] = 9;
+        buzzerData[1] = 9;
+        buzzerData[2] = 9;
+        buzzerData[3] = 9;
+
         delay(400);
 
         // L
@@ -86,9 +91,14 @@ void loop() {
         noTone(32);
         digitalWrite(33, LOW);
         noTone(33);
-
-        delay(400);
     }
+    else {
+      buzzerData[0] = 9;
+      buzzerData[1] = 9;
+      buzzerData[2] = 9;
+      buzzerData[3] = 9;
+    }
+    
   }
 
 }  
