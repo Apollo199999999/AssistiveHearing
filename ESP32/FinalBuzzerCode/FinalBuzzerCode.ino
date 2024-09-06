@@ -50,13 +50,13 @@ void loop() {
     // L
     if (buzzerData[0] != 4) {
       tone(16, exp(buzzerData[0] * 2) + 30, 700);
-      tone(17, exp(buzzerData[0] * 2) + 30, 700);
+      //tone(17, exp(buzzerData[0] * 2) + 30, 700);
     }
    
     // R
     if (buzzerData[2] != 4) {
       tone(32, exp(buzzerData[2] * 2) + 30, 700);
-      tone(33, exp(buzzerData[2] * 2) + 30, 700);
+      //tone(33, exp(buzzerData[2] * 2) + 30, 700);
     }
   }
 
