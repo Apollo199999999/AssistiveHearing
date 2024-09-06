@@ -7,15 +7,10 @@ void setup() {
   // L (front)
   pinMode(16, OUTPUT);
   pinMode(17, OUTPUT);
-  digitalWrite(16, HIGH);
-  digitalWrite(17, HIGH);
 
   // R (back)
   pinMode(32, OUTPUT);
   pinMode(33, OUTPUT);
-  digitalWrite(32, HIGH);
-  digitalWrite(33, HIGH);
-
   
   Serial.begin(115200);
 }
