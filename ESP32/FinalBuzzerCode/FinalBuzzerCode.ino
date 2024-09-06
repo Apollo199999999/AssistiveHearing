@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <BlockNot.h>   
 
+BlockNot buzzerTimer(700);
+
 void setup() {
   // Configure the buzzers
 
@@ -40,25 +42,49 @@ void loop() {
   // If all 4 values in the buzzerData array aren't 9, it means that they have been populated via Serial.
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
     // L
+    digitalWrite(16, LOW);
     noTone(16);
+    digitalWrite(17, LOW);
     noTone(17);
 
     // R
+    digitalWrite(32, LOW);
     noTone(32);
+    digitalWrite(33, LOW);
     noTone(33);
 
     // L
     if (buzzerData[0] != 4) {
-      tone(16, exp(buzzerData[0] * 2) + 30, 700);
-      //tone(17, exp(buzzerData[0] * 2) + 30, 700);
+      digitalWrite(16, HIGH);
+      tone(16, exp(buzzerData[0] * 2) + 30);
+      digitalWrite(17, HIGH);
+      tone(17, exp(buzzerData[0] * 2) + 30);
     }
    
     // R
     if (buzzerData[2] != 4) {
-      tone(32, exp(buzzerData[2] * 2) + 30, 700);
-      //tone(33, exp(buzzerData[2] * 2) + 30, 700);
+      digitalWrite(32, HIGH);
+      tone(32, exp(buzzerData[2] * 2) + 30);
+      digitalWrite(33, HIGH);
+      tone(33, exp(buzzerData[2] * 2) + 30);
     }
+
+    buzzerTimer.RESET;
   }
+
+  if (buzzerTimer.FIRST_TRIGGER) {  
+     // L
+    digitalWrite(16, LOW);
+    noTone(16);
+    digitalWrite(17, LOW);
+    noTone(17);
+
+    // R
+    digitalWrite(32, LOW);
+    noTone(32);
+    digitalWrite(33, LOW);
+    noTone(33);
+  }  
 
 }  
 
