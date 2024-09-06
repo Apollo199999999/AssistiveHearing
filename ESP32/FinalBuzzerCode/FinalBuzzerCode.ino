@@ -38,17 +38,17 @@ void loop() {
   // Play buzzer if applicable
   // If all 4 values in the buzzerData array aren't 9, it means that they have been populated via Serial.
   if (buzzerData[0] != 9 && buzzerData[1] != 9 && buzzerData[2] != 9 && buzzerData[3] != 9) {
-    // L
-    digitalWrite(16, LOW);
-    noTone(16);
-    digitalWrite(17, LOW);
-    noTone(17);
+    // // L
+    // digitalWrite(16, LOW);
+    // noTone(16);
+    // digitalWrite(17, LOW);
+    // noTone(17);
 
-    // R
-    digitalWrite(32, LOW);
-    noTone(32);
-    digitalWrite(33, LOW);
-    noTone(33);
+    // // R
+    // digitalWrite(32, LOW);
+    // noTone(32);
+    // digitalWrite(33, LOW);
+    // noTone(33);
 
     // L
     if (buzzerData[0] != 4) {
