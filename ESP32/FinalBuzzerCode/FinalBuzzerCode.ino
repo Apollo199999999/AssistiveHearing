@@ -1,7 +1,4 @@
 #include <Arduino.h>
-#include <BlockNot.h>   
-
-BlockNot buzzerTimer(400);
 
 void setup() {
   // Configure the buzzers
@@ -76,23 +73,21 @@ void loop() {
     }
 
     if (buzzerData[1] == 0 && buzzerData[3] == 0) {
-      buzzerTimer.RESET;
+        delay(400);
+
+        // L
+        digitalWrite(16, LOW);
+        noTone(16);
+        digitalWrite(17, LOW);
+        noTone(17);
+
+        // R
+        digitalWrite(32, LOW);
+        noTone(32);
+        digitalWrite(33, LOW);
+        noTone(33);
     }
   }
-
-  if (buzzerTimer.FIRST_TRIGGER) {  
-     // L
-    digitalWrite(16, LOW);
-    noTone(16);
-    digitalWrite(17, LOW);
-    noTone(17);
-
-    // R
-    digitalWrite(32, LOW);
-    noTone(32);
-    digitalWrite(33, LOW);
-    noTone(33);
-  }  
 
 }  
 
