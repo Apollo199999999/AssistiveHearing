@@ -14,15 +14,8 @@ void setup() {
  
 void loop()
 {
-  digitalWrite(16, HIGH);
-  tone(16, 31, 400);
-  digitalWrite(17, HIGH);
-  tone(17, 31, 400);
-  digitalWrite(32, HIGH);
-  tone(32, 31, 400);
-  digitalWrite(33, HIGH);
-  tone(33, 31, 400);
-
-
-  delay(1000);
+  tone(16, 100, 400);
+  tone(17, 100, 400);
+  tone(32, 100, 400);
+  tone(33, 100, 400);
 }

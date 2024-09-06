@@ -489,7 +489,7 @@ public class MainActivity extends AppCompatActivity {
                 textView.setText(text);
 
                 // 2 elements for L buzzer, 2 elements for R buzzer
-                // First element stores "intensity" (1-3)
+                // First element stores "intensity" (1-3). 4 indicates dont buzz
                 // Second element stores continuous (1)/intermittent(0)
                 byte[] soundData = new byte[4];
                 soundData[0] = 9;
@@ -505,12 +505,25 @@ public class MainActivity extends AppCompatActivity {
 
                     if (categoryLabels.contains(dangerCategories.get(i).toLowerCase())) {
                         // L
-                        soundData[0] = (byte) (3 * TopLoudness);
-                        soundData[1] = (byte) 1;
+                        if (TopLoudness == 0) {
+                            soundData[0] = (byte) 4;
+                            soundData[1] = (byte) 1;
+                        }
+                        else {
+                            soundData[0] = (byte) 3;
+                            soundData[1] = (byte) 1;
+                        }
 
                         // R
-                        soundData[2] = (byte) (3 * BottomLoudness);
-                        soundData[3] = (byte) 1;
+                        if (BottomLoudness == 0) {
+                            soundData[2] = (byte) 4;
+                            soundData[3] = (byte) 1;
+                        }
+                        else {
+                            soundData[2] = (byte) 3;
+                            soundData[3] = (byte) 1;
+                        }
+
                         break;
                     }
                 }
@@ -523,12 +536,25 @@ public class MainActivity extends AppCompatActivity {
 
                     if (categoryLabels.contains(alertCategories.get(i).toLowerCase())) {
                         // L
-                        soundData[0] = (byte) (2 * TopLoudness);
-                        soundData[1] = (byte) 1;
+                        if (TopLoudness == 0) {
+                            soundData[0] = (byte) 4;
+                            soundData[1] = (byte) 1;
+                        }
+                        else {
+                            soundData[0] = (byte) 2;
+                            soundData[1] = (byte) 1;
+                        }
 
                         // R
-                        soundData[2] = (byte) (2 * BottomLoudness);
-                        soundData[3] = (byte) 1;
+                        if (BottomLoudness == 0) {
+                            soundData[2] = (byte) 4;
+                            soundData[3] = (byte) 1;
+                        }
+                        else {
+                            soundData[2] = (byte) 2;
+                            soundData[3] = (byte) 1;
+                        }
+
                         break;
                     }
                 }
@@ -541,18 +567,29 @@ public class MainActivity extends AppCompatActivity {
 
                     if (categoryLabels.contains(gtkCategories.get(i).toLowerCase())) {
                         // L
-                        soundData[0] = (byte) (1 * TopLoudness);
-                        soundData[1] = (byte) 0;
+                        if (TopLoudness == 0) {
+                            soundData[0] = (byte) 4;
+                            soundData[1] = (byte) 0;
+                        }
+                        else {
+                            soundData[0] = (byte) 1;
+                            soundData[1] = (byte) 0;
+                        }
 
                         // R
-                        soundData[2] = (byte) (1 * BottomLoudness);
-                        soundData[3] = (byte) 0;
+                        if (BottomLoudness == 0) {
+                            soundData[2] = (byte) 4;
+                            soundData[3] = (byte) 0;
+                        }
+                        else {
+                            soundData[2] = (byte) 1;
+                            soundData[3] = (byte) 0;
+                        }
+
                         break;
                     }
                 }
 
-                TopLoudness = 0;
-                BottomLoudness = 0;
 
                 if (soundData[0] == 9) {
                     sourceText.setText("None");
